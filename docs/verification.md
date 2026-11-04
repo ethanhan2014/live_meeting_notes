@@ -1,6 +1,30 @@
 # Verification record
 
-Version 0.2.0, checked on 2026-11-04. Meeting fixtures used for these checks were synthetic; audio benchmarks used a short public speech sample or generated noise.
+## Version 0.3.0
+
+Checked on 2026-11-04. Native builds use commit `bfbafbca65b1d65cfd3416da8bfe31811442973e`; the later documentation update does not change packaged application files. All three jobs passed in [desktop build run 41916581472](https://github.com/ethanhan2014/live_meeting_notes/actions/runs/41916581472).
+
+| Platform | Passed tests | Skipped tests |
+| --- | ---: | ---: |
+| Linux development environment | 96 | 0 |
+| Windows x64 | 91 | 5 |
+| macOS Apple Silicon | 96 | 0 |
+| macOS Intel x64 | 96 | 0 |
+
+Windows skips cover POSIX executable discovery, process-group cancellation and symlink-replacement behavior. The suite additionally covers Mac CLI paths, Finder installation discovery, cancellation during configuration preparation, writable transcript storage outside the app bundle, denied/ended system audio, and CPU worker limits.
+
+- Both Mac architectures recognized a generated English sentence with finite segment and word timing. A single inference took 3,183 ms on the Apple Silicon runner and 898 ms on the Intel runner. These short checks are not sustained meeting benchmarks.
+- Both Mac DMG/ZIP builds passed ad-hoc signature verification, microphone/system audio privacy declarations, Mach-O architecture checks, bundled application byte comparisons, external schema comparisons, and speech resource hashes.
+- Each packaged Mac app launched with an isolated profile, loaded the bundled English speech backend, and shut down successfully. This startup check did not exercise microphone/system audio hardware capture or authenticated AI generation.
+- The Windows portable EXE built successfully and passed application/schema/resource verification. Its packaged GUI was not launched in this CI run.
+- A four-core Linux check of the actual speech server reproduced scheduling slowdown with six workers: approximately 14.3 seconds versus 2.3 seconds with four workers on the same 5.5-second public speech sample. The app now limits workers to available cores; lower user limits are retained. Benchmark output reports the actual count.
+- The benchmark self-check and Git whitespace checks passed. Gitleaks found no secrets in source or Git history.
+
+Mac builds are ad-hoc signed and not notarized; Gatekeeper or managed policy may block them. Windows builds remain unsigned. Real Teams capture, headsets/Bluetooth, device hot-plug, multi-monitor recording, suspend, sustained meetings and authenticated Mac AI calls remain manual checks. No credentials, global AI CLI configuration or meeting data were changed.
+
+---
+
+The following historical record describes development checks performed before version 0.2.0 publication, checked on 2026-11-04. Meeting fixtures were synthetic; audio benchmarks used a short public speech sample or generated noise.
 
 ## Automated tests
 
