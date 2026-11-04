@@ -1,0 +1,10 @@
+{
+  "type":"object","additionalProperties":false,"required":["status","answer","sources","gaps"],
+  "properties":{
+    "status":{"type":"string","enum":["answered","unresolved"]},"answer":{"type":"string","maxLength":8000},
+    "sources":{"type":"array","maxItems":200,"items":{"type":"object","additionalProperties":false,"required":["title","url"],"properties":{
+      "title":{"type":"string","maxLength":8000},"url":{"type":"string","maxLength":8000}
+    }}},
+    "gaps":{"type":"array","maxItems":200,"items":{"type":"string","maxLength":8000}}
+  }
+}

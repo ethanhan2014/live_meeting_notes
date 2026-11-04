@@ -1,0 +1,55 @@
+{
+  "mode": "repeated short fixture inference plus simulated logical replay",
+  "sample": "leading-silence.wav",
+  "durationSeconds": 6,
+  "machine": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 5 135U",
+    "logicalCPUs": 14,
+    "node": "v25.3.0"
+  },
+  "runs": [
+    {
+      "threads": 6,
+      "vad": true,
+      "startupMs": 1036.7377,
+      "inferences": 1,
+      "p50InferenceMs": 4006.7560000000003,
+      "p95InferenceMs": 4006.7560000000003,
+      "rtf": 0.6677926666666667,
+      "inferenceMs": [
+        4006.7560000000003
+      ],
+      "text": "And so my fellow Americans ask",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask",
+          "start": 2.31,
+          "end": 5.8500000000000005,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.3084324598312378,
+          "no_speech_prob": 0.029271245002746582
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 2.5067559999999958
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "mode": "repeated short fixture inference plus simulated logical replay",
+  "sample": "noise.wav",
+  "durationSeconds": 6,
+  "machine": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 5 135U",
+    "logicalCPUs": 14,
+    "node": "v25.3.0"
+  },
+  "runs": [
+    {
+      "threads": 6,
+      "vad": false,
+      "startupMs": 520.3521,
+      "inferences": 2,
+      "p50InferenceMs": 1047.4021,
+      "p95InferenceMs": 1050.1514000000002,
+      "rtf": 0.174796125,
+      "inferenceMs": [
+        1047.4021,
+        1050.1514000000002
+      ],
+      "text": "",
+      "segments": [],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0
+      }
+    },
+    {
+      "threads": 6,
+      "vad": true,
+      "startupMs": 453.18960000000015,
+      "inferences": 2,
+      "p50InferenceMs": 24.87429999999995,
+      "p95InferenceMs": 38.42089999999962,
+      "rtf": 0.005274599999999964,
+      "inferenceMs": [
+        38.42089999999962,
+        24.87429999999995
+      ],
+      "text": "",
+      "segments": [],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0
+      }
+    }
+  ]
+}

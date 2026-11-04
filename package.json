@@ -1,0 +1,69 @@
+{
+  "name": "live-meeting-notes",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local English meeting transcription and notes for Windows",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "build:win": "electron-builder --win --x64",
+    "postinstall": "node node_modules/electron/install.js",
+    "prepare:resources": "node scripts/prepare-resources.cjs",
+    "dist:win": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "dependencies": {
+    "smol-toml": "1.9.1"
+  },
+  "build": {
+    "appId": "local.live-meeting-notes",
+    "productName": "Live Meeting Notes",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "lib/**/*",
+      "renderer/**/*",
+      "schemas/*.json",
+      "THIRD-PARTY-NOTICES.txt",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "schemas",
+        "to": "schemas",
+        "filter": [
+          "*.json"
+        ]
+      },
+      {
+        "from": "resources",
+        "to": "resources",
+        "filter": [
+          "manifest.json",
+          "whisper/*",
+          "models/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "npmRebuild": false
+  }
+}

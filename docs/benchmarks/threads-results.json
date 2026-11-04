@@ -1,0 +1,623 @@
+{
+  "mode": "repeated short fixture inference plus simulated logical replay",
+  "sample": "sample-six-seconds.wav",
+  "durationSeconds": 6,
+  "machine": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 5 135U",
+    "logicalCPUs": 14,
+    "node": "v25.3.0"
+  },
+  "runs": [
+    {
+      "threads": 2,
+      "vad": false,
+      "startupMs": 508.7676,
+      "inferences": 8,
+      "p50InferenceMs": 1830.4458999999988,
+      "p95InferenceMs": 2113.9403999999995,
+      "rtf": 0.31492679166666665,
+      "inferenceMs": [
+        1971.5142,
+        1704.2072000000003,
+        1688.0020999999997,
+        1759.6259,
+        2077.3912,
+        1971.3590999999997,
+        1830.4458999999988,
+        2113.9403999999995
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0,
+          "end": 6,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "words": [
+            {
+              "word": " And",
+              "start": 0.32,
+              "end": 0.37,
+              "t_dtw": -1,
+              "probability": 0.6043192744255066
+            },
+            {
+              "word": " so",
+              "start": 0.37,
+              "end": 0.53,
+              "t_dtw": -1,
+              "probability": 0.9794917702674866
+            },
+            {
+              "word": " my",
+              "start": 0.6900000000000001,
+              "end": 0.85,
+              "t_dtw": -1,
+              "probability": 0.6510202884674072
+            },
+            {
+              "word": " fellow",
+              "start": 0.85,
+              "end": 1.59,
+              "t_dtw": -1,
+              "probability": 0.9923295974731445
+            },
+            {
+              "word": " Americans",
+              "start": 1.59,
+              "end": 2.1,
+              "t_dtw": -1,
+              "probability": 0.9281905889511108
+            },
+            {
+              "word": " ask",
+              "start": 3.29,
+              "end": 3.62,
+              "t_dtw": -1,
+              "probability": 0.4140647351741791
+            },
+            {
+              "word": " not",
+              "start": 3.62,
+              "end": 4.28,
+              "t_dtw": -1,
+              "probability": 0.6262365579605103
+            },
+            {
+              "word": " what",
+              "start": 4.28,
+              "end": 5.03,
+              "t_dtw": -1,
+              "probability": 0.9027348756790161
+            },
+            {
+              "word": " you",
+              "start": 5.41,
+              "end": 5.43,
+              "t_dtw": -1,
+              "probability": 0.584010660648346
+            },
+            {
+              "word": " are",
+              "start": 5.43,
+              "end": 5.83,
+              "t_dtw": -1,
+              "probability": 0.6844622492790222
+            },
+            {
+              "word": " coming",
+              "start": 5.97,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.4161708652973175
+            },
+            {
+              "word": " to",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.2755928337574005
+            },
+            {
+              "word": ".",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.19645905494689941
+            }
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.47984281182289124,
+          "no_speech_prob": 0.058345381170511246
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0.6139404000000468
+      }
+    },
+    {
+      "threads": 2,
+      "vad": true,
+      "startupMs": 934.8188000000009,
+      "inferences": 8,
+      "p50InferenceMs": 2983.1757999999973,
+      "p95InferenceMs": 3692.5368000000017,
+      "rtf": 0.4930383812499999,
+      "inferenceMs": [
+        2084.730499999998,
+        2685.8271000000022,
+        2983.1757999999973,
+        3360.959500000001,
+        3184.481399999997,
+        2675.254399999998,
+        3692.5368000000017,
+        2998.876799999998
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0.32,
+          "end": 6.0200000000000005,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.4437699317932129,
+          "no_speech_prob": 0.025543473660945892
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 1.4988768000000618
+      }
+    },
+    {
+      "threads": 4,
+      "vad": false,
+      "startupMs": 903.5883000000031,
+      "inferences": 8,
+      "p50InferenceMs": 2143.4990000000034,
+      "p95InferenceMs": 2355.9406000000017,
+      "rtf": 0.3609810708333334,
+      "inferenceMs": [
+        2058.8372999999992,
+        2355.9406000000017,
+        2267.5540000000037,
+        2216.508399999999,
+        1966.9009000000005,
+        2143.4990000000034,
+        2246.821799999998,
+        2071.0293999999994
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0,
+          "end": 6,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "words": [
+            {
+              "word": " And",
+              "start": 0.32,
+              "end": 0.37,
+              "t_dtw": -1,
+              "probability": 0.6057929992675781
+            },
+            {
+              "word": " so",
+              "start": 0.37,
+              "end": 0.53,
+              "t_dtw": -1,
+              "probability": 0.9793404340744019
+            },
+            {
+              "word": " my",
+              "start": 0.6900000000000001,
+              "end": 0.85,
+              "t_dtw": -1,
+              "probability": 0.6495777368545532
+            },
+            {
+              "word": " fellow",
+              "start": 0.85,
+              "end": 1.59,
+              "t_dtw": -1,
+              "probability": 0.9923021793365479
+            },
+            {
+              "word": " Americans",
+              "start": 1.59,
+              "end": 2.1,
+              "t_dtw": -1,
+              "probability": 0.9287457466125488
+            },
+            {
+              "word": " ask",
+              "start": 3.29,
+              "end": 3.62,
+              "t_dtw": -1,
+              "probability": 0.40983909368515015
+            },
+            {
+              "word": " not",
+              "start": 3.62,
+              "end": 4.28,
+              "t_dtw": -1,
+              "probability": 0.6262962818145752
+            },
+            {
+              "word": " what",
+              "start": 4.28,
+              "end": 5.03,
+              "t_dtw": -1,
+              "probability": 0.902289867401123
+            },
+            {
+              "word": " you",
+              "start": 5.41,
+              "end": 5.43,
+              "t_dtw": -1,
+              "probability": 0.5909342169761658
+            },
+            {
+              "word": " are",
+              "start": 5.43,
+              "end": 5.83,
+              "t_dtw": -1,
+              "probability": 0.6856526136398315
+            },
+            {
+              "word": " coming",
+              "start": 5.97,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.41636934876441956
+            },
+            {
+              "word": " to",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.2813257873058319
+            },
+            {
+              "word": ".",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.19803503155708313
+            }
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.47767239809036255,
+          "no_speech_prob": 0.059346478432416916
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0.5710293999998157
+      }
+    },
+    {
+      "threads": 4,
+      "vad": true,
+      "startupMs": 701.5973999999987,
+      "inferences": 8,
+      "p50InferenceMs": 2350.894199999995,
+      "p95InferenceMs": 2564.900099999999,
+      "rtf": 0.38819559999999986,
+      "inferenceMs": [
+        2208.7593999999954,
+        2472.169799999996,
+        2564.900099999999,
+        2350.894199999995,
+        2362.6352000000043,
+        2448.646399999998,
+        2169.6015000000043,
+        2055.7822000000015
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0.32,
+          "end": 6.0200000000000005,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.44318631291389465,
+          "no_speech_prob": 0.02658604271709919
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0.555782200000067
+      }
+    },
+    {
+      "threads": 6,
+      "vad": false,
+      "startupMs": 669.0571000000054,
+      "inferences": 8,
+      "p50InferenceMs": 1964.8121999999858,
+      "p95InferenceMs": 2386.0001000000047,
+      "rtf": 0.3468000145833333,
+      "inferenceMs": [
+        2348.5457999999926,
+        2299.569100000008,
+        1964.8121999999858,
+        2386.0001000000047,
+        2016.3029999999999,
+        1880.2948000000033,
+        1801.5360000000073,
+        1949.3396999999968
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0,
+          "end": 6,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "words": [
+            {
+              "word": " And",
+              "start": 0.32,
+              "end": 0.37,
+              "t_dtw": -1,
+              "probability": 0.605340838432312
+            },
+            {
+              "word": " so",
+              "start": 0.37,
+              "end": 0.53,
+              "t_dtw": -1,
+              "probability": 0.9793143272399902
+            },
+            {
+              "word": " my",
+              "start": 0.6900000000000001,
+              "end": 0.85,
+              "t_dtw": -1,
+              "probability": 0.6492235064506531
+            },
+            {
+              "word": " fellow",
+              "start": 0.85,
+              "end": 1.59,
+              "t_dtw": -1,
+              "probability": 0.9922463297843933
+            },
+            {
+              "word": " Americans",
+              "start": 1.59,
+              "end": 2.1,
+              "t_dtw": -1,
+              "probability": 0.9288759827613831
+            },
+            {
+              "word": " ask",
+              "start": 3.29,
+              "end": 3.62,
+              "t_dtw": -1,
+              "probability": 0.4091002643108368
+            },
+            {
+              "word": " not",
+              "start": 3.62,
+              "end": 4.28,
+              "t_dtw": -1,
+              "probability": 0.6251469850540161
+            },
+            {
+              "word": " what",
+              "start": 4.28,
+              "end": 5.03,
+              "t_dtw": -1,
+              "probability": 0.9027959704399109
+            },
+            {
+              "word": " you",
+              "start": 5.41,
+              "end": 5.43,
+              "t_dtw": -1,
+              "probability": 0.5904294848442078
+            },
+            {
+              "word": " are",
+              "start": 5.43,
+              "end": 5.83,
+              "t_dtw": -1,
+              "probability": 0.6859848499298096
+            },
+            {
+              "word": " coming",
+              "start": 5.97,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.41538873314857483
+            },
+            {
+              "word": " to",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.2802354097366333
+            },
+            {
+              "word": ".",
+              "start": 5.99,
+              "end": 5.99,
+              "t_dtw": -1,
+              "probability": 0.19693215191364288
+            }
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.4787731468677521,
+          "no_speech_prob": 0.06007911264896393
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0.4493396999998822
+      }
+    },
+    {
+      "threads": 6,
+      "vad": true,
+      "startupMs": 691.2449000000051,
+      "inferences": 8,
+      "p50InferenceMs": 2072.7019,
+      "p95InferenceMs": 2237.861300000004,
+      "rtf": 0.35089359375000034,
+      "inferenceMs": [
+        2047.9339000000036,
+        2016.1140000000014,
+        2097.537500000006,
+        2072.7019,
+        2044.722299999994,
+        2224.3698000000004,
+        2101.651800000007,
+        2237.861300000004
+      ],
+      "text": "And so my fellow Americans ask not what you are coming to.",
+      "segments": [
+        {
+          "id": 0,
+          "text": " And so my fellow Americans ask not what you are coming to.",
+          "start": 0.32,
+          "end": 6.0200000000000005,
+          "tokens": [
+            843,
+            523,
+            616,
+            5891,
+            3399,
+            1265,
+            407,
+            644,
+            345,
+            389,
+            2406,
+            284,
+            13
+          ],
+          "temperature": 0,
+          "avg_logprob": -0.4436686933040619,
+          "no_speech_prob": 0.027083439752459526
+        }
+      ],
+      "replay": {
+        "mode": "simulation cycling measured inference timings; no live capture or long-running inference",
+        "logicalSeconds": 1800,
+        "jobs": 328,
+        "intervalSeconds": 5.5,
+        "maxBacklogSeconds": 0,
+        "p95QueueWaitMs": 0,
+        "drainSeconds": 0.7378613000000769
+      }
+    }
+  ]
+}
