@@ -2,6 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const cp=require('node:child_process');
+const os=require('node:os');
 const {EventEmitter}=require('node:events');
 function load(t,spawn){t.mock.method(fs,'access',async()=>{});t.mock.method(cp,'spawn',spawn);delete require.cache[require.resolve('../lib/speech.cjs')];t.after(()=>delete require.cache[require.resolve('../lib/speech.cjs')]);return require('../lib/speech.cjs').SpeechEngine;}
 function child(){const value=new EventEmitter();value.stderr=new EventEmitter();value.stdout=new EventEmitter();value.kill=()=>{};return value;}
@@ -37,6 +38,7 @@ test('close cancels startup and a fresh start cannot be replaced by stale readin
  await engine.start();release();await rejection;assert.equal(launches,2);assert.equal(engine.ready,true);engine.close();
 });
 test('unexpected exit reports unhealthy state and permits a new process',async t=>{
+ t.mock.method(os,'availableParallelism',()=>8);
  const children=[],states=[];let args;
  const Engine=load(t,(_file,options)=>{args=options;const value=child();children.push(value);return value;});
  t.mock.method(globalThis,'fetch',async()=>({ok:true}));
@@ -48,6 +50,16 @@ test('unexpected exit reports unhealthy state and permits a new process',async t
 test('speech rejects invalid user settings',t=>{
  const Engine=load(t,()=>child());
  for(const options of [{threads:0},{threads:17},{threads:2.5},{vad:'yes'}])assert.throws(()=>new Engine('unused',options),/settings/);
+});
+test('speech caps worker threads at available cores and preserves a lower user limit',async t=>{
+ let args;
+ const Engine=load(t,(_file,options)=>{args=options;return child();});
+ t.mock.method(os,'availableParallelism',()=>2);
+ t.mock.method(globalThis,'fetch',async()=>({ok:true}));
+ for(const [threads,expected]of [[6,'2'],[1,'1']]){
+  const engine=new Engine('unused',{threads});await engine.start();
+  assert.equal(args[args.indexOf('-t')+1],expected);engine.close();
+ }
 });
 test('VAD omits unremapped token times while preserving original timeline segment times',async t=>{
  const Engine=load(t,()=>child());

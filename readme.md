@@ -45,7 +45,7 @@ Capture includes all system sound. Teams mute does not mute this app's microphon
 
 Mac capture uses Electron's CoreAudio Tap support and requires macOS 14.2 or later. Missing audio permissions can produce an ended audio track; the app stops and explains the required permissions before creating a meeting. For Mac recording, launch the packaged app from Finder: Terminal/IDE source launches can attribute audio permission to the parent program instead.
 
-Transcription arrives as short audio chunks finish recognition. The footer reports inference time, queue size, real-time factor and latency. Audio gain, CPU threads, silence threshold and optional VAD are configurable. Silence calibration measures quiet input for three seconds; repeat it after changing devices.
+Transcription arrives as short audio chunks finish recognition. The footer reports inference time, queue size, real-time factor and latency. Audio gain, CPU thread limit, silence threshold and optional VAD are configurable. Speech workers are capped at available CPU cores to avoid scheduling slowdowns; Mac builds use Apple's Accelerate framework. Silence calibration measures quiet input for three seconds; repeat it after changing devices.
 
 ## AI agents and models
 

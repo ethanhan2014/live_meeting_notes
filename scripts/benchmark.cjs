@@ -65,10 +65,10 @@ async function main(args) {
       const measurements=[];let segments=[];
       for(let i=0;i<runs;i++){
         const started=performance.now();segments=await engine.transcribe(wavPath);measurements.push(performance.now()-started);
-        process.stderr.write(`threads=${count} vad=${vad} run=${i+1}/${runs} inferenceMs=${Math.round(measurements.at(-1))}\n`);
+        process.stderr.write(`threads=${engine.threads} vad=${vad} run=${i+1}/${runs} inferenceMs=${Math.round(measurements.at(-1))}\n`);
       }
       const total=measurements.reduce((sum,value)=>sum+value,0);
-      results.runs.push({threads:count,vad,startupMs,inferences:runs,p50InferenceMs:percentile(measurements,.5),p95InferenceMs:percentile(measurements,.95),
+      results.runs.push({threads:engine.threads,vad,startupMs,inferences:runs,p50InferenceMs:percentile(measurements,.5),p95InferenceMs:percentile(measurements,.95),
         rtf:total/(runs*durationSeconds*1000),inferenceMs:measurements,text:segments.map(s=>s.text).join(' ').trim(),segments,
         replay:replay(measurements,durationSeconds===6?5.5:durationSeconds,logicalSeconds)});
     }finally{engine.close();}
