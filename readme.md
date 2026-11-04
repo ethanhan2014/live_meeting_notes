@@ -1,5 +1,7 @@
 # Live Meeting Notes
 
+[Download the Windows portable app](https://github.com/ethanhan2014/live_meeting_notes/releases/latest). Place the EXE in a writable folder and run it; the runtime and English speech resources are bundled. AI notes require an installed, authenticated AI CLI.
+
 A Windows Electron app that transcribes meeting audio locally and turns the transcript into notes using an installed AI CLI.
 
 - Live English transcription of system audio and microphone input with whisper.cpp.
@@ -11,7 +13,7 @@ A Windows Electron app that transcribes meeting audio locally and turns the tran
 
 ## Requirements
 
-Windows 10/11 x64, Node.js 22 or later, npm, and desktop microphone access. Install and authenticate at least one supported AI CLI; its provider must support the selected model. Internet access is needed for setup downloads and online AI/search services. Speech recognition runs locally after setup.
+Windows 10/11 x64 and desktop microphone access. Running from source also requires Node.js 22 or later and npm. Install and authenticate at least one supported AI CLI; its provider must support the selected model. Internet access is needed for setup downloads and online AI/search services. Speech recognition runs locally after setup.
 
 ## Quick start
 

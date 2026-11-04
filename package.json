@@ -31,6 +31,7 @@
       "lib/**/*",
       "renderer/**/*",
       "schemas/*.json",
+      "LICENSE",
       "THIRD-PARTY-NOTICES.txt",
       "package.json"
     ],
