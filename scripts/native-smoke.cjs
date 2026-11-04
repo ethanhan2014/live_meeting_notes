@@ -14,7 +14,8 @@ async function speech(sample) {
     assert.ok(segments.some(segment => segment.text.trim().length > 3), 'No English speech recognized.');
     assert.ok(segments.every(segment => Number.isFinite(segment.start) && Number.isFinite(segment.end)));
     console.log(JSON.stringify({elapsedMs:Date.now() - started,text:segments.map(segment => segment.text).join(' '),tokenTiming:segments.some(segment => segment.words?.some(word => Number.isFinite(word.start)))}));
-  } finally { engine.close(); }
+  } catch(error) { console.error(engine.log); throw error; }
+  finally { engine.close(); }
 }
 async function codex() {
   const jobs=new CodexJobs(path.join(os.tmpdir(),'live-meeting-notes-smoke-jobs'));

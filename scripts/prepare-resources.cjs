@@ -40,7 +40,7 @@ async function prepare() {
     execFileSync('tar',['-xzf',archive,'-C',staging]);
     const source=path.join(staging,'whisper.cpp-b5454'),build=path.join(staging,'build');
     try{
-      execFileSync('cmake',['-S',source,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_SHARED_LIBS=OFF','-DGGML_NATIVE=OFF','-DGGML_METAL=OFF','-DGGML_BLAS=OFF','-DGGML_OPENMP=OFF','-DWHISPER_BUILD_TESTS=OFF','-DWHISPER_BUILD_SERVER=ON','-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2','-DCMAKE_OSX_ARCHITECTURES='+(process.arch==='arm64'?'arm64':'x86_64')],{stdio:'inherit'});
+      execFileSync('cmake',['-S',source,'-B',build,'-DCMAKE_BUILD_TYPE=Release','-DBUILD_SHARED_LIBS=OFF','-DGGML_NATIVE=OFF','-DGGML_METAL=OFF','-DGGML_BLAS=ON','-DGGML_BLAS_VENDOR=Apple','-DGGML_OPENMP=OFF','-DWHISPER_BUILD_TESTS=OFF','-DWHISPER_BUILD_SERVER=ON','-DCMAKE_OSX_DEPLOYMENT_TARGET=14.2','-DCMAKE_OSX_ARCHITECTURES='+(process.arch==='arm64'?'arm64':'x86_64')],{stdio:'inherit'});
       execFileSync('cmake',['--build',build,'--config','Release','--target','whisper-server','whisper-cli','--parallel','4'],{stdio:'inherit'});
     }catch(error){if(error.code==='ENOENT')throw new Error('Install CMake and Xcode Command Line Tools, then prepare resources again.');throw error;}
     sourceDirectory=path.join(build,'bin');names=['whisper-server','whisper-cli'];

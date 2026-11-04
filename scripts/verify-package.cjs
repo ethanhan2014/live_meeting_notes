@@ -6,9 +6,9 @@ const asar=require('@electron/asar');
 
 const root=path.resolve(__dirname,'..'),resources=path.resolve(process.argv[2]||'dist/win-unpacked/resources');
 const archive=path.join(resources,'app.asar'),metadata=require('../package.json');
-const sourceFiles=['main.cjs','preload.cjs','LICENSE','THIRD-PARTY-NOTICES.txt',...['lib','renderer','schemas'].flatMap(directory=>fs.readdirSync(path.join(root,directory)).map(name=>directory+'/'+name))];
+const sourceFiles=['main.cjs','preload.cjs','LICENSE','THIRD-PARTY-NOTICES.txt',...['lib','renderer'].flatMap(directory=>fs.readdirSync(path.join(root,directory)).map(name=>directory+'/'+name))];
 for(const file of sourceFiles)assert.deepEqual(asar.extractFile(archive,file),fs.readFileSync(path.join(root,file)),file);
-const allowed=new Set([...sourceFiles.map(name=>'/'+name),'/package.json','/lib','/renderer','/schemas','/node_modules','/node_modules/smol-toml']);
+const allowed=new Set([...sourceFiles.map(name=>'/'+name),'/package.json','/lib','/renderer','/node_modules','/node_modules/smol-toml']);
 for(const entry of asar.listPackage(archive)){
   const file=entry.split(path.sep).join('/');
   assert.ok(allowed.has(file)||file.startsWith('/node_modules/smol-toml/'),'Unexpected bundled file: '+file);
