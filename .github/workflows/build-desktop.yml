@@ -1,0 +1,66 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: x64
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run prepare:resources
+      - name: Native Mac speech check
+        if: runner.os == 'macOS'
+        run: |
+          say -o "$RUNNER_TEMP/english.aiff" "Alex will check the release date."
+          afconvert -f WAVE -d LEI16@16000 -c 1 "$RUNNER_TEMP/english.aiff" "$RUNNER_TEMP/english.wav"
+          node scripts/native-smoke.cjs "$RUNNER_TEMP/english.wav"
+      - name: Build Windows portable app
+        if: runner.os == 'Windows'
+        run: npx --no-install electron-builder --win portable --x64 --publish never
+      - name: Verify Windows package
+        if: runner.os == 'Windows'
+        run: node scripts/verify-package.cjs dist/win-unpacked/resources
+      - name: Build Mac app
+        if: runner.os == 'macOS'
+        run: npm run dist:mac -- --${{ matrix.arch }} --publish never
+      - name: Verify Mac package and startup
+        if: runner.os == 'macOS'
+        run: |
+          app="$(find dist -maxdepth 2 -name 'Live Meeting Notes.app' -type d -print -quit)"
+          test -n "$app"
+          codesign --verify --deep --strict "$app"
+          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :NSAudioCaptureUsageDescription' "$app/Contents/Info.plist"
+          node scripts/verify-package.cjs "$app/Contents/Resources"
+          node scripts/packaged-smoke.cjs "$app/Contents/MacOS/Live Meeting Notes"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error

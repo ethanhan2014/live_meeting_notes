@@ -113,6 +113,7 @@ function render(state) {
     for(const prefix of ['summary','answer']){$(prefix+'-agent').value=value[prefix+'Agent'];modelControls(prefix);$(prefix+'-model').value=value[prefix+'Model'];$(prefix+'-effort').value=value[prefix+'Effort'];}gains();
   }
   $('transcript-folder').placeholder=state.scriptsDirectory||'';
+  $('codex-path').placeholder=state.platform==='darwin'?'/opt/homebrew/bin/codex':'C:\\…\\codex.exe';
   if(state.scriptFiles){const key=JSON.stringify(state.scriptFiles);if(key!==shownScripts){shownScripts=key;const selected=$('transcript-file').value;$('transcript-file').replaceChildren(...state.scriptFiles.map(name=>{const option=node('option',name);option.value=name;return option;}));if(state.scriptFiles.includes(selected))$('transcript-file').value=selected;}}
   $('load-transcript').disabled=locked||!$('transcript-file').value;
   const historyKey=JSON.stringify(state.history);
@@ -155,7 +156,7 @@ async function release(){
 }
 function meterFrame(frame){
   $('mic-level').value=Math.min(1,frame.mic*5);$('system-level').value=Math.min(1,frame.system*5);
-  $('audio-status').textContent=frame.peak>=.98?'Audio is clipping. Lower the gains.':`Raw mic ${(frame.rawMic*100).toFixed(1)}% · PC ${(frame.rawSystem*100).toFixed(1)}% · mixed peak ${(Math.min(frame.peak,9)*100).toFixed(0)}%`;
+  $('audio-status').textContent=frame.peak>=.98?'Audio is clipping. Lower the gains.':`Raw mic ${(frame.rawMic*100).toFixed(1)}% · system ${(frame.rawSystem*100).toFixed(1)}% · mixed peak ${(Math.min(frame.peak,9)*100).toFixed(0)}%`;
   $('audio-status').classList.toggle('clipping',frame.peak>=.98);
   if(calibration){
     calibration.push(frame.mixed);
@@ -170,7 +171,7 @@ async function start(test=false){
   if(starting||capturing)return;let failureMessage='';starting=true;render(current);showError('');
   try{
     systemStream=await navigator.mediaDevices.getDisplayMedia({audio:true,video:{frameRate:1,width:16,height:16}});
-    if(!systemStream.getAudioTracks().length)throw new Error('Windows did not provide system audio. Check your output device.');
+    if(!systemStream.getAudioTracks().length||systemStream.getAudioTracks().some(track=>track.readyState!=='live'))throw new Error(current.platform==='darwin'?'System audio is unavailable. macOS 14.2 or later is required. Allow screen recording and system audio recording in System Settings → Privacy & Security, then restart the app.':'System audio is unavailable. Check your output device and audio permissions.');
     for(const track of systemStream.getVideoTracks())track.enabled=false;
     const device=$('microphone').value;
     micStream=await navigator.mediaDevices.getUserMedia({audio:{...(device?{deviceId:{exact:device}}:{}),echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:1},video:false});
@@ -191,7 +192,7 @@ async function start(test=false){
     for(const track of [...systemStream.getAudioTracks(),...micStream.getAudioTracks()])track.onended=()=>{if(capturing&&!stopping)act(async()=>{if(!testMode)await window.meeting.captureFailed('An audio device disconnected. This transcript may be incomplete.');await stop(false);});};
     await microphones();if(!test)await window.meeting.compact();
   }catch(error){
-    const message=error.message||'Audio capture failed. Check Windows microphone permissions.';failureMessage=message;
+    const message=current.platform==='darwin'&&['NotAllowedError','SecurityError'].includes(error.name)?'Allow microphone, screen recording and system audio recording in System Settings → Privacy & Security, then restart the app.':error.message||'Audio capture failed. Check microphone and system audio permissions.';failureMessage=message;
     if(testMode)await window.meeting.audioTest(false).catch(()=>{});
     else if((await window.meeting.state()).active){await window.meeting.captureFailed(message);await window.meeting.stop(false).catch(()=>{});}
     await release();testMode=false;render(await window.meeting.state());showError(message);

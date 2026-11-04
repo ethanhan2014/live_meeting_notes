@@ -6,10 +6,15 @@ const path=require('node:path');
 const {defaults,validateSettings,loadSettings,saveSettings}=require('../lib/settings.cjs');
 
 test('settings validate audio ranges and executable paths before saving', () => {
-  assert.equal(validateSettings({...defaults,codexExecutable:'C:\\Tools\\codex.exe'}).threads,6);
+  assert.equal(validateSettings({...defaults,codexExecutable:'C:\\Tools\\codex.exe'},'win32').threads,6);
   for (const changes of [{threads:0},{threads:1.5},{micGain:4},{noiseThreshold:NaN},{vad:'true'},{codexExecutable:'codex.exe'},{codexExecutable:'C:\\Tools\\codex.cmd'}]) {
     assert.throws(()=>validateSettings({...defaults,...changes}),/settings|executable/i);
   }
+});
+test('macOS settings accept native CLI paths and reject foreign or relative paths',()=>{
+  const value={...defaults,codexExecutable:'/opt/homebrew/bin/codex',transcriptFolder:'/Users/example/Notes'};
+  assert.equal(validateSettings(value,'darwin').codexExecutable,value.codexExecutable);
+  for(const changes of [{codexExecutable:'codex'},{codexExecutable:'C:\\Tools\\codex.exe'},{transcriptFolder:'C:\\Notes'},{transcriptFolder:'../notes'}])assert.throws(()=>validateSettings({...value,...changes},'darwin'));
 });
 test('old audio settings gain AI defaults and per-agent efforts are validated',()=>{
   const legacy=validateSettings({threads:4});assert.equal(legacy.summaryModel,'gpt-6-luna');assert.equal(legacy.answerAgent,'codex');assert.equal(legacy.transcriptFolder,'');

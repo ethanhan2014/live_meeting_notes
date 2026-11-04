@@ -31,18 +31,24 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve,250));
     }
     assert.equal(state.ready,true,'Speech model did not become ready.');
+    if(process.env.MEETING_SMOKE_SCRIPTS){assert.equal(state.settings.transcriptFolder,process.env.MEETING_SMOKE_SCRIPTS,'The app did not use isolated test settings.');assert.equal(state.session,null,'Packaged startup unexpectedly loaded a meeting.');}
     assert.equal(await evaluate('document.querySelector("h1").textContent'),'Live Meeting Notes');
     assert.equal(await evaluate('document.getElementById("start").disabled'),false);
     const screenshot=await call('Page.captureScreenshot',{format:'png'});
     await fs.writeFile(path.resolve('ui-startup.png'),Buffer.from(screenshot.data,'base64'));
-    console.log('Windows UI ready; startup screenshot saved.');
+    console.log('Native UI ready; startup screenshot saved.');
     if(process.argv.includes('--synthetic')){
       const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'meeting-speech-'));
       let wav;
       try{
         const output=path.join(temporary,'speech.wav').replaceAll("'","''");
         const command=`Add-Type -AssemblyName System.Speech; $meetingVoice=New-Object System.Speech.Synthesis.SpeechSynthesizer; $meetingVoice.SetOutputToWaveFile('${output}'); $meetingVoice.Speak('This is a test meeting. Alex will check the release date. The due date has not been decided. We need to confirm the latest Node release.'); $meetingVoice.Dispose()`;
-        await new Promise((resolve,reject)=>execFile('powershell.exe',['-NoProfile','-NonInteractive','-Command',command],{windowsHide:true},error=>error?reject(error):resolve()));
+        const execute=(file,args)=>new Promise((resolve,reject)=>execFile(file,args,{windowsHide:true},error=>error?reject(error):resolve()));
+        if(process.platform==='darwin'){
+          const aiff=path.join(temporary,'speech.aiff');
+          await execute('say',['-o',aiff,'This is a test meeting. Alex will check the release date. The due date has not been decided. We need to confirm the latest Node release.']);
+          await execute('afconvert',['-f','WAVE','-d','LEI16','-c','1',aiff,path.join(temporary,'speech.wav')]);
+        }else await execute('powershell.exe',['-NoProfile','-NonInteractive','-Command',command]);
         wav=(await fs.readFile(path.join(temporary,'speech.wav'))).toString('base64');
       }finally{await fs.rm(temporary,{recursive:true,force:true});}
       await evaluate(`window.__syntheticContexts=[];
@@ -123,7 +129,7 @@ async function main() {
         await evaluate('document.getElementById("pause").click();document.getElementById("mute").click()');await new Promise(resolve=>setTimeout(resolve,200));assert.equal((await evaluate('window.meeting.state()')).paused,false);
       }
       const powershell='$meetingVoice = New-Object System.Speech.Synthesis.SpeechSynthesizer; $meetingVoice.Volume=30; $meetingVoice.Speak("This is a test meeting. Alex will check the release date. The due date has not been decided. We need to confirm the latest Node release."); $meetingVoice.Dispose();';
-      if(!process.argv.includes('--synthetic'))await new Promise((resolve,reject) => execFile('powershell.exe',['-NoProfile','-NonInteractive','-Command','Add-Type -AssemblyName System.Speech; '+powershell],{windowsHide:true},error => error ? reject(error) : resolve()));
+      if(!process.argv.includes('--synthetic'))await new Promise((resolve,reject) => execFile(process.platform==='darwin'?'say':'powershell.exe',process.platform==='darwin'?['This is a test meeting. Alex will check the release date.']:['-NoProfile','-NonInteractive','-Command','Add-Type -AssemblyName System.Speech; '+powershell],{windowsHide:true},error => error ? reject(error) : resolve()));
       await new Promise(resolve=>setTimeout(resolve,process.argv.includes('--synthetic')?14000:1500));
       if(process.argv.includes('--updates')){
         const targets=await(await fetch(`http://127.0.0.1:${process.env.MEETING_SMOKE_PORT||9236}/json/list`)).json(),panel=targets.find(target=>target.type==='page'&&target.title==='Live transcript');assert.ok(panel,'Recording panel did not open.');

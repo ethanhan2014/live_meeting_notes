@@ -17,9 +17,13 @@ if(!primary)app.quit();
 let window,recording,speech,jobs,root,entry,resources,settingsPath,busy=null,error=null,closing=false,testing=false,paused=false;
 let settings={...defaults},history=[],recovery={count:0,bytes:0,legacyCount:0},diagnostic=null,shutdown=null,captureReleased=null,operationIdle=null;
 let agents=[],scriptFiles=[],scriptSaveError=null,scriptKey='',scriptWrites=Promise.resolve(),overlay,overlayEntry;
-function transcriptDirectory(){return settings.transcriptFolder||path.join(app.isPackaged?(process.env.PORTABLE_EXECUTABLE_DIR||path.dirname(app.getPath('exe'))):__dirname,'scripts');}
+function transcriptDirectory(){
+  if(settings.transcriptFolder)return settings.transcriptFolder;
+  if(app.isPackaged&&process.platform==='darwin')return path.join(app.getPath('userData'),'scripts');
+  return path.join(app.isPackaged?(process.env.PORTABLE_EXECUTABLE_DIR||path.dirname(app.getPath('exe'))):__dirname,'scripts');
+}
 function state() {
-  return {session:recording?.session || null,active:recording?.active || false,pending:recording?.pending || 0,
+  return {platform:process.platform,session:recording?.session || null,active:recording?.active || false,pending:recording?.pending || 0,
     busy,error:error || recording?.failure?.message || null,captureError:recording?.failure?.message || null,
     ready:speech?.ready || false,closing,testing,paused,settings,history,recovery,diagnostic,metrics:recording?.metrics || null,
     agents,scriptFiles,scriptSaveError,scriptsDirectory:transcriptDirectory()};
@@ -236,7 +240,7 @@ app.whenReady().then(async()=>{
     if(restart){speech.close();speech=new SpeechEngine(resources,{threads:settings.threads,vad:settings.vad,onState:speechState});recording.engine=speech;if(!closing)ensureSpeech().catch(()=>{});}
   }));
   handle('meeting-pick-codex',async()=>{
-    idle();const result=await dialog.showOpenDialog(window,{properties:['openFile'],filters:[{name:'Native Codex executable',extensions:['exe']}]});return result.canceled?null:result.filePaths[0];
+    idle();const result=await dialog.showOpenDialog(window,{properties:['openFile'],filters:process.platform==='win32'?[{name:'Native Codex executable',extensions:['exe']}]:[]});return result.canceled?null:result.filePaths[0];
   });
   handle('meeting-diagnostics',async()=>{
     idle();busy='diagnostics';jobs.cancelled=false;error=null;diagnostic=null;changed();
@@ -249,9 +253,10 @@ app.whenReady().then(async()=>{
   handle('meeting-cancel',()=>jobs.cancel());
   window.on('close',event=>{event.preventDefault();beginShutdown();});
   window.on('closed',()=>{if(overlay&&!overlay.isDestroyed())overlay.destroy();jobs.cancel();speech.close();});
-  powerMonitor.on('suspend',()=>{if(recording.active||testing)beginShutdown('Windows suspended during recording.');});
+  powerMonitor.on('suspend',()=>{if(recording.active||testing)beginShutdown('The computer suspended during recording.');});
   await window.loadFile(path.join(__dirname,'renderer','index.html'));ensureSpeech().catch(()=>{});
 }).catch(failure=>{console.error(safeError(failure.message));app.quit();});
 app.on('second-instance',()=>{if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();}});
+app.on('activate',()=>{if(window&&!window.isDestroyed())restoreWindow();});
 app.on('window-all-closed',()=>app.quit());
 app.on('before-quit',event=>{if(window&&!window.isDestroyed()&&(recording?.active||busy||testing)){event.preventDefault();beginShutdown();}});

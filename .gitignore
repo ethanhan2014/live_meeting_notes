@@ -21,10 +21,14 @@ auth*.json
 *.p12
 *.pfx
 *.exe
+*.app/
+*.dmg
+*.pkg
 *.dll
 *.zip
 *.tar.gz
 *.wav
+*.aiff
 *.mp3
 *.m4a
 *.mp4

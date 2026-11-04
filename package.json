@@ -1,8 +1,8 @@
 {
   "name": "live-meeting-notes",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Local English meeting transcription and notes for Windows",
+  "description": "Local English meeting transcription and notes for Windows and macOS",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
@@ -10,7 +10,8 @@
     "build:win": "electron-builder --win --x64",
     "postinstall": "node node_modules/electron/install.js",
     "prepare:resources": "node scripts/prepare-resources.cjs",
-    "dist:win": "electron-builder --win --x64"
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac"
   },
   "devDependencies": {
     "electron": "45.2.1",
@@ -59,6 +60,26 @@
         "nsis"
       ],
       "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "Live-Meeting-Notes-${version}-mac-${arch}.${ext}",
+      "category": "public.app-category.productivity",
+      "minimumSystemVersion": "14.2",
+      "identity": "-",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "signIgnore": [
+        "Contents/Resources/resources/whisper/"
+      ],
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Transcribe your microphone during meetings.",
+        "NSAudioCaptureUsageDescription": "Transcribe meeting audio from other apps."
+      }
     },
     "nsis": {
       "oneClick": true,

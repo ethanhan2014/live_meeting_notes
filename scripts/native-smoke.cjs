@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const os = require('node:os');
 const {SpeechEngine} = require('../lib/speech.cjs');
 const {CodexJobs} = require('../lib/codex.cjs');
 
@@ -16,7 +17,7 @@ async function speech(sample) {
   } finally { engine.close(); }
 }
 async function codex() {
-  const jobs=new CodexJobs(path.join(process.env.LOCALAPPDATA,'Live Meeting Notes','smoke-jobs'));
+  const jobs=new CodexJobs(path.join(os.tmpdir(),'live-meeting-notes-smoke-jobs'));
   const session={transcript:[{start:0,end:8,text:'Alex will confirm the release date. We need to know the current Node.js LTS release.'}]};
   const notes=await jobs.notes(session);
   assert.ok(notes.summary.length > 5);

@@ -3,6 +3,17 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {CodexJobs}=require('../lib/codex.cjs');
+const path=require('node:path');
+
+test('Mac transcript files stay outside the app bundle and custom folders are preserved',()=>{
+ const context=vm.createContext({path:path.posix,process:{platform:'darwin',env:{}},settings:{transcriptFolder:''},__dirname:'/source',app:{isPackaged:true,getPath:name=>{assert.equal(name,'userData');return '/Users/example/Library/Application Support/Live Meeting Notes';}}});
+ const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function transcriptDirectory()'),source.indexOf('function state()')),context);
+ assert.equal(vm.runInContext('transcriptDirectory()',context),'/Users/example/Library/Application Support/Live Meeting Notes/scripts');
+ context.settings.transcriptFolder='/Users/example/Notes';assert.equal(vm.runInContext('transcriptDirectory()',context),'/Users/example/Notes');
+ context.settings.transcriptFolder='';context.app.isPackaged=false;assert.equal(vm.runInContext('transcriptDirectory()',context),'/source/scripts');
+ context.path=path.win32;context.process={platform:'win32',env:{PORTABLE_EXECUTABLE_DIR:'C:\\Downloads'}};context.app.isPackaged=true;
+ assert.equal(vm.runInContext('transcriptDirectory()',context),'C:\\Downloads\\scripts');
+});
 
 test('Cancel during the initial session save prevents the notes job from sending context', async () => {
   let release,started,runs=0,saves=0;

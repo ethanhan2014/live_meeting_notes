@@ -52,8 +52,8 @@ test('owners and dates must occur in their cited passages, not elsewhere in the 
 });
 test('configured Codex executable must be an absolute native executable path',()=>{
   const {validateExecutable}=require('../lib/codex.cjs');
-  assert.equal(validateExecutable('C:\\Tools\\codex.exe'),'C:\\Tools\\codex.exe');
-  for(const value of ['codex.exe','C:\\Tools\\codex.cmd','C:\\Tools\\codex.exe\narg']) assert.throws(()=>validateExecutable(value),/executable/);
+  assert.equal(validateExecutable('C:\\Tools\\codex.exe','win32'),'C:\\Tools\\codex.exe');
+  for(const value of ['codex.exe','C:\\Tools\\codex.cmd','C:\\Tools\\codex.exe\narg']) assert.throws(()=>validateExecutable(value,'win32'),/executable/);
 });
 test('researched sources must be safe URLs returned by the search tool', () => {
   const answer={status:'answered',answer:'Use the supported LTS release.',sources:[{title:'Node',url:'https://nodejs.org/en/about/previous-releases'}],gaps:[]};
@@ -100,8 +100,9 @@ test('cancelling during configuration preparation does not launch Codex or send 
   await assert.rejects(running,/cancelled/);assert.equal(launches,0);
 });
 test('diagnostics use the configured native executable and cancellation stops later jobs',async t=>{
-  const executable='C:\\Tools\\codex.exe';let callback,launched,notes=0;
+  const executable=process.platform==='win32'?'C:\\Tools\\codex.exe':'/opt/meeting-test/codex';let callback,launched,notes=0;
   t.mock.method(fs,'access',async value=>{assert.equal(value,executable);});
+  t.mock.method(fs,'stat',async()=>({isFile:()=>true}));
   t.mock.method(childProcess,'execFile',(file,args,options,done)=>{launched={file,args,options};callback=done;return {kill(){}};});
   const modulePath=require.resolve('../lib/codex.cjs');delete require.cache[modulePath];t.after(()=>delete require.cache[modulePath]);
   const {CodexJobs}=require(modulePath);const jobs=new CodexJobs('unused');jobs.executable=executable;

@@ -3,6 +3,23 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
+test('denied Mac system audio releases tracks and cannot start an incomplete recording',async()=>{
+ const source=fs.readFileSync(require.resolve('../renderer/app.js'),'utf8');
+ for(const denial of ['ended','permission']){
+  let recorded=0,microphones=0,message='';const tracks=[{readyState:'ended',stopped:false,stop(){this.stopped=true;}},{readyState:'live',stopped:false,stop(){this.stopped=true;}}];
+  const state={active:false,platform:'darwin'},elements=new Map();
+  const context=vm.createContext({starting:false,capturing:false,systemStream:null,micStream:null,context:null,worklet:null,calibration:null,testMode:false,current:state,
+   $:id=>{if(!elements.has(id))elements.set(id,{value:''});return elements.get(id);},render(){},showError:value=>{message=value;},
+   navigator:{mediaDevices:{getDisplayMedia:async()=>{if(denial==='permission')throw Object.assign(new Error('Permission denied'),{name:'NotAllowedError'});return {getAudioTracks:()=>[tracks[0]],getTracks:()=>tracks};},getUserMedia:async()=>{microphones++;}}},
+   window:{meeting:{state:async()=>state,start:async()=>{recorded++;}}}});
+  const functions=source.slice(source.indexOf('async function release()'),source.indexOf('function meterFrame('))+source.slice(source.indexOf('async function start('),source.indexOf('async function stop('));
+  vm.runInContext(functions.replace('import.meta.url','"file:///renderer/app.js"'),context);
+  await vm.runInContext('start()',context);
+  assert.equal(recorded,0);assert.equal(microphones,0);assert.match(message,/Privacy & Security/);assert.equal(context.starting,false);
+  if(denial==='ended')assert.ok(tracks.every(track=>track.stopped));
+ }
+});
+
 test('an export error keeps recording, while an audio failure stops capture', () => {
   const elements=new Map();let stops=0;
   const element=()=>({value:'',classList:{toggle(){}},childNodes:[],replaceChildren(){},append(){},setAttribute(){}});
