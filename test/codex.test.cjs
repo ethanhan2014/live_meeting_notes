@@ -95,6 +95,7 @@ test('cancelling during configuration preparation does not launch Codex or send 
   t.after(() => {delete require.cache[modulePath];});
   const {CodexJobs}=require(modulePath);
   const jobs=new CodexJobs('unused');
+  jobs.resolveExecutable=async()=>{throw new Error('Unexpected discovery after cancellation');};
   const running=jobs.run('notes','Generate notes.',{transcript:[]});
   await reading;jobs.cancel();release();
   await assert.rejects(running,/cancelled/);assert.equal(launches,0);

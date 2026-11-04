@@ -9,7 +9,10 @@ const archive=path.join(resources,'app.asar'),metadata=require('../package.json'
 const sourceFiles=['main.cjs','preload.cjs','LICENSE','THIRD-PARTY-NOTICES.txt',...['lib','renderer','schemas'].flatMap(directory=>fs.readdirSync(path.join(root,directory)).map(name=>directory+'/'+name))];
 for(const file of sourceFiles)assert.deepEqual(asar.extractFile(archive,file),fs.readFileSync(path.join(root,file)),file);
 const allowed=new Set([...sourceFiles.map(name=>'/'+name),'/package.json','/lib','/renderer','/schemas','/node_modules','/node_modules/smol-toml']);
-for(const file of asar.listPackage(archive))assert.ok(allowed.has(file)||file.startsWith('/node_modules/smol-toml/'),'Unexpected bundled file: '+file);
+for(const entry of asar.listPackage(archive)){
+  const file=entry.split(path.sep).join('/');
+  assert.ok(allowed.has(file)||file.startsWith('/node_modules/smol-toml/'),'Unexpected bundled file: '+file);
+}
 const packaged=JSON.parse(asar.extractFile(archive,'package.json'));
 assert.equal(packaged.version,metadata.version);assert.deepEqual(packaged.dependencies,metadata.dependencies);
 for(const name of ['notes.json','answer.json'])assert.deepEqual(fs.readFileSync(path.join(resources,'schemas',name)),fs.readFileSync(path.join(root,'schemas',name)));
