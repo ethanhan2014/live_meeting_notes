@@ -1,0 +1,227 @@
+[
+  {
+    "name": "sap-1-voice-1.wav",
+    "file": "sap-1-voice-1.wav",
+    "reference": "Alex will confirm the release date Friday. The discount is eight percent.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft David Desktop",
+    "terms": [
+      {
+        "label": "Alex",
+        "variants": [
+          "Alex"
+        ]
+      },
+      {
+        "label": "Friday",
+        "variants": [
+          "Friday"
+        ]
+      },
+      {
+        "label": "8 percent",
+        "variants": [
+          "eight percent",
+          "8 percent",
+          "8%"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-2-voice-1.wav",
+    "file": "sap-2-voice-1.wav",
+    "reference": "Check the company code, fiscal year, and journal entry in SAP.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft David Desktop",
+    "terms": [
+      {
+        "label": "SAP",
+        "variants": [
+          "SAP",
+          "S A P"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-3-voice-1.wav",
+    "file": "sap-3-voice-1.wav",
+    "reference": "Review credit exposure in FSCM, and confirm the settlement document.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft David Desktop",
+    "terms": [
+      {
+        "label": "FSCM",
+        "variants": [
+          "FSCM",
+          "F S C M",
+          "FS CM",
+          "F SCM"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-4-voice-1.wav",
+    "file": "sap-4-voice-1.wav",
+    "reference": "Compare ACDOCA with the general ledger. Rahul owns the follow up.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft David Desktop",
+    "terms": [
+      {
+        "label": "ACDOCA",
+        "variants": [
+          "ACDOCA",
+          "AC DOCA",
+          "A C D O C A"
+        ]
+      },
+      {
+        "label": "Rahul",
+        "variants": [
+          "Rahul"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-1-voice-2.wav",
+    "file": "sap-1-voice-2.wav",
+    "reference": "Alex will confirm the release date Friday. The discount is eight percent.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft Zira Desktop",
+    "terms": [
+      {
+        "label": "Alex",
+        "variants": [
+          "Alex"
+        ]
+      },
+      {
+        "label": "Friday",
+        "variants": [
+          "Friday"
+        ]
+      },
+      {
+        "label": "8 percent",
+        "variants": [
+          "eight percent",
+          "8 percent",
+          "8%"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-2-voice-2.wav",
+    "file": "sap-2-voice-2.wav",
+    "reference": "Check the company code, fiscal year, and journal entry in SAP.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft Zira Desktop",
+    "terms": [
+      {
+        "label": "SAP",
+        "variants": [
+          "SAP",
+          "S A P"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-3-voice-2.wav",
+    "file": "sap-3-voice-2.wav",
+    "reference": "Review credit exposure in FSCM, and confirm the settlement document.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft Zira Desktop",
+    "terms": [
+      {
+        "label": "FSCM",
+        "variants": [
+          "FSCM",
+          "F S C M",
+          "FS CM",
+          "F SCM"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sap-4-voice-2.wav",
+    "file": "sap-4-voice-2.wav",
+    "reference": "Compare ACDOCA with the general ledger. Rahul owns the follow up.",
+    "kind": "synthetic SAP speech",
+    "voice": "Microsoft Zira Desktop",
+    "terms": [
+      {
+        "label": "ACDOCA",
+        "variants": [
+          "ACDOCA",
+          "AC DOCA",
+          "A C D O C A"
+        ]
+      },
+      {
+        "label": "Rahul",
+        "variants": [
+          "Rahul"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "librispeech-0.wav",
+    "file": "model/test_wavs/0.wav",
+    "reference": "AFTER EARLY NIGHTFALL THE YELLOW LAMPS WOULD LIGHT UP HERE AND THERE THE SQUALID QUARTER OF THE BROTHELS",
+    "kind": "public human speech"
+  },
+  {
+    "name": "librispeech-1.wav",
+    "file": "model/test_wavs/1.wav",
+    "reference": "GOD AS A DIRECT CONSEQUENCE OF THE SIN WHICH MAN THUS PUNISHED HAD GIVEN HER A LOVELY CHILD WHOSE PLACE WAS ON THAT SAME DISHONOURED BOSOM TO CONNECT HER PARENT FOR EVER WITH THE RACE AND DESCENT OF MORTALS AND TO BE FINALLY A BLESSED SOUL IN HEAVEN",
+    "kind": "public human speech"
+  },
+  {
+    "name": "jfk",
+    "file": "jfk.wav",
+    "reference": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country",
+    "kind": "public human speech"
+  },
+  {
+    "name": "silence.wav",
+    "file": "silence.wav",
+    "reference": "",
+    "kind": "synthetic silence or noise",
+    "noSpeech": true
+  },
+  {
+    "name": "noise.wav",
+    "file": "noise.wav",
+    "reference": "",
+    "kind": "synthetic silence or noise",
+    "noSpeech": true
+  },
+  {
+    "name": "leading-silence.wav",
+    "file": "leading-silence.wav",
+    "reference": null,
+    "kind": "modified public speech",
+    "noSpeech": false
+  },
+  {
+    "name": "noisy-speech.wav",
+    "file": "noisy-speech.wav",
+    "reference": null,
+    "kind": "modified public speech",
+    "noSpeech": false
+  },
+  {
+    "name": "harmonic-tone",
+    "file": "tone.wav",
+    "reference": "",
+    "kind": "synthetic non-speech: 220/440/880-Hz tones, 0.04 amplitude each",
+    "noSpeech": true
+  }
+]

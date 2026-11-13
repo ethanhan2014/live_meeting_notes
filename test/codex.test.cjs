@@ -36,19 +36,82 @@ test('notes explicitly request gpt-6-luna with medium reasoning without changing
   assert.ok(!research.some(value=>value.startsWith('model=')||value.startsWith('model_reasoning_effort=')));
   assert.deepEqual(config,original);
 });
-test('notes preserve absent facts and reject invalid evidence or invented owners', () => {
+test('notes preserve absent facts, omit invented owners and reject invalid evidence', () => {
   const notes = {summary:'The release date needs confirmation.',actions:[{task:'Confirm the release date',owner:'Alex',due:null,evidence:[0]}],questions:[{id:'model-id',question:'What is the current Node LTS release?',evidence:[0]}]};
   const result = validateNotes(notes, meeting);
   assert.equal(result.actions[0].due, null); assert.equal(result.questions[0].id,'q1');
-  assert.throws(() => validateNotes({...notes,actions:[{...notes.actions[0],owner:'Nobody'}]},meeting), /owner/);
-  assert.throws(() => validateNotes({...notes,actions:[{...notes.actions[0],owner:'Al'}]},meeting), /owner/);
+  assert.equal(validateNotes({...notes,actions:[{...notes.actions[0],owner:'Nobody'}]},meeting).actions[0].owner,null);
+  assert.equal(validateNotes({...notes,actions:[{...notes.actions[0],owner:'Al'}]},meeting).actions[0].owner,null);
   assert.throws(() => validateNotes({...notes,questions:[{...notes.questions[0],evidence:[999]}]},meeting), /evidence/);
 });
 test('owners and dates must occur in their cited passages, not elsewhere in the meeting',()=>{
   const session={transcript:[{start:0,end:5,text:'Alex is on vacation until Friday.'},{start:10,end:15,text:'Someone must check the release date.'}]};
   const note={summary:'Release date needs checking.',actions:[{task:'Check release date',owner:'Alex',due:null,evidence:[10]}],questions:[]};
-  assert.throws(()=>validateNotes(note,session),/owner/);
-  assert.throws(()=>validateNotes({...note,actions:[{...note.actions[0],owner:null,due:'Friday'}]},session),/due/);
+  assert.equal(validateNotes(note,session).actions[0].owner,null);
+  assert.equal(validateNotes({...note,actions:[{...note.actions[0],owner:null,due:'Friday'}]},session).actions[0].due,null);
+});
+test('rounded evidence uses saved segment starts for grounding, storage and research',async()=>{
+  const {CodexJobs}=require('../lib/codex.cjs'),{newSession,validateSession}=require('../lib/session.cjs');
+  const session={...newSession(),transcript:[{start:98.35000000000001,end:99.8,text:'Alex will confirm the release date Friday.'},{start:5507.139999999999,end:5507.139999999999,text:'Which release is supported?'}]};
+  const notes={summary:'Confirm the release date.',actions:[{task:'Confirm the release date',owner:'Alex',due:'Friday',evidence:[98.35]}],questions:[{id:'model-id',question:'Which release is supported?',evidence:[5507.14]}]};
+  const original=structuredClone(notes);session.notes=validateNotes(notes,session);
+  assert.deepEqual(session.notes.actions[0],{...notes.actions[0],evidence:[session.transcript[0].start]});
+  assert.deepEqual(session.notes.questions[0].evidence,[session.transcript[1].start]);
+  assert.deepEqual(notes,original);validateSession(JSON.parse(JSON.stringify(session)));
+  const jobs=new CodexJobs('unused');let researched=false;
+  jobs.run=async(kind,_instructions,context)=>{assert.equal(kind,'research');assert.ok(context.transcript.includes(session.transcript[1]));researched=true;return {value:{status:'unresolved',answer:'',sources:[],gaps:['No sources.']},sources:new Set()};};
+  await jobs.research(session,session.notes.questions[0]);assert.equal(researched,true);
+  for(const value of [[],null,[NaN],[Infinity],['98.35'],[-.0001],[99.81],[100],[98.34],[98.35,9999],Array(21).fill(98.35)]){
+    assert.throws(()=>validateNotes({...notes,actions:[{...notes.actions[0],evidence:value}]},session),/evidence/);
+    assert.throws(()=>validateNotes({...notes,actions:[],questions:[{...notes.questions[0],evidence:value}]},session),/evidence/);
+  }
+});
+test('exact starts take precedence over nearby segments when evidence is normalized',()=>{
+  const session={transcript:[{start:9.9995,end:11,text:'Someone will confirm the release date.'},{start:10,end:12,text:'Alex will confirm the release date Friday.'}]};
+  const notes={summary:'Confirm the release date.',actions:[{task:'Confirm the release date',owner:'Alex',due:'Friday',evidence:[10]}],questions:[]};
+  assert.deepEqual(validateNotes(notes,session),notes);
+});
+test('chunked notes normalize rounded evidence again during the merge',async()=>{
+  const {CodexJobs}=require('../lib/codex.cjs'),jobs=new CodexJobs('unused');
+  const session={transcript:[{start:98.35000000000001,end:99.8,text:'Alex will confirm the release date Friday. '+'Discussion. '.repeat(2500)},{start:5507.139999999999,end:5508,text:'Which release is supported? '+'Discussion. '.repeat(2500)}]};
+  const notes={summary:'Confirm the release date.',actions:[{task:'Confirm the release date',owner:'Alex',due:'Friday',evidence:[98.35]}],questions:[]};let calls=0;
+  jobs.run=async(_kind,_instructions,context)=>{
+    calls++;if(context.partialNotes){assert.equal(context.partialNotes[0].actions[0].evidence[0],session.transcript[0].start);return {value:notes};}
+    return {value:context.transcript[0].start<100?notes:{summary:'Partial notes.',actions:[],questions:[]}};
+  };
+  const result=await jobs.notes(session);assert.equal(calls,3);assert.deepEqual(result.actions[0].evidence,[session.transcript[0].start]);assert.equal(result.actions[0].owner,'Alex');assert.equal(result.actions[0].due,'Friday');
+});
+test('unsupported deadlines do not discard notes or mutate the provider response',()=>{
+  const session={transcript:[{start:0,end:5,text:'Alex will research the open questions.'},{start:10,end:15,text:'The next meeting is next week.'}]};
+  const note={summary:'The open questions need research.',actions:[{task:'Research the open questions',owner:'Alex',due:'next week',evidence:[0]}],questions:[]};
+  const original=structuredClone(note),result=validateNotes(note,session);
+  assert.deepEqual(result,{...note,actions:[{...note.actions[0],due:null}]});
+  assert.deepEqual(note,original);
+  const supported={...note,actions:[{...note.actions[0],due:'next week',evidence:[0,10]}]};
+  assert.deepEqual(validateNotes(supported,session),supported);
+  for(const field of ['owner','due']){
+    for(const value of [42,{},'x'.repeat(8001)])assert.throws(()=>validateNotes({...note,actions:[{...note.actions[0],[field]:value}]},session),/invalid text/);
+    for(const value of ['', '   ', '!!!'])assert.equal(validateNotes({...note,actions:[{...note.actions[0],[field]:value}]},session).actions[0][field],null);
+  }
+  assert.throws(()=>validateNotes({...note,actions:[{...note.actions[0],evidence:[999]}]},session),/evidence/);
+});
+test('long transcript notes continue through all chunks and merge with unsupported metadata omitted',async()=>{
+  const {CodexJobs}=require('../lib/codex.cjs'),jobs=new CodexJobs('unused');
+  const session={transcript:[{start:0,end:5,text:'Alex will research the open questions. '+'Discussion. '.repeat(2500)},{start:10,end:15,text:'The next meeting is Friday. '+'Discussion. '.repeat(2500)}]};
+  let calls=0;
+  jobs.run=async(kind,_instructions,context)=>{
+    assert.equal(kind,'notes');calls++;
+    if(context.partialNotes){
+      assert.equal(context.partialNotes.length,2);
+      assert.equal(context.partialNotes[0].actions[0].due,null);
+      return {value:{summary:'Merged notes.',actions:[{task:'Research the open questions',owner:'Nobody',due:'Friday',evidence:[0]}],questions:[]}};
+    }
+    assert.equal(context.transcript.length,1);
+    return {value:{summary:'Partial notes.',actions:context.transcript[0].start===0?[{task:'Research the open questions',owner:'Alex',due:'Friday',evidence:[0]}]:[],questions:[]}};
+  };
+  const result=await jobs.notes(session);
+  assert.equal(calls,3);assert.equal(result.summary,'Merged notes.');
+  assert.deepEqual(result.actions,[{task:'Research the open questions',owner:null,due:null,evidence:[0]}]);
 });
 test('configured Codex executable must be an absolute native executable path',()=>{
   const {validateExecutable}=require('../lib/codex.cjs');

@@ -32,6 +32,17 @@ test('Stop waits for the last accepted utterance and saves it before deleting au
   assert.equal(stored.transcript[0].text,'The final words.');assert.equal(stored.status,'complete');
   assert.deepEqual(await fs.readdir(path.join(root,recording.session.id+'.audio')),[]);
 });
+test('recording saves and exports filtered, bounded recognition results before cleaning up audio',async t=>{
+  const {root,session,id,dir}=await pending(t,{start:1250.4,end:1256.4});
+  const segments=[{start:0,end:1.49,text:'a'+'w'.repeat(56)},...Array.from({length:6},()=>({start:1.49,end:1.49,text:'w'.repeat(60)})),{start:1.49,end:30,text:'w'.repeat(16)},
+    {start:1.5,end:3.9,text:'Fiscal year.'},{start:1.5,end:3.9,text:'Fiscal year.'},{start:4,end:30,text:'Confirm the date.'},{start:31,end:32,text:'Outside audio.'}];
+  const recording=new Recording(root,{start:async()=>{},transcribe:async()=>segments},()=>{});recording.session=session;
+  await recording.recover();const saved=await loadSession(root,session.id);
+  assert.deepEqual(saved.transcript,[{start:1251.9,end:1254.3000000000002,text:'Fiscal year.'},{start:1254.4,end:1256.4,text:'Confirm the date.'}]);
+  assert.deepEqual(saved.processedChunks,[id]);assert.deepEqual(await fs.readdir(dir),[]);
+  const {exportSession}=require('../lib/session.cjs');
+  for(const format of ['txt','md']){const exported=exportSession(saved,format);assert.equal(exported.split('Fiscal year.').length,2);assert.ok(!exported.includes('wwww'));assert.ok(!exported.includes('Outside audio.'));}
+});
 test('recognition failure preserves pending audio and marks the transcript incomplete', async t => {
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'meeting-failure-'));t.after(() => fs.rm(root,{recursive:true,force:true}));
   const recording=new Recording(root,{start:async()=>{},transcribe:async()=>{throw new Error('speech unavailable');}},()=>{});
