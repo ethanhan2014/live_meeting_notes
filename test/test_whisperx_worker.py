@@ -1,4 +1,7 @@
 import importlib.util
+import io
+import json
+import threading
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -9,6 +12,20 @@ worker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(worker)
 
 class WorkerTests(unittest.TestCase):
+    def test_model_initializes_on_the_reader_thread_and_inference_stays_in_background(self):
+        calls = {}
+        owner = threading.current_thread()
+        class FakeWorker:
+            def dispatch(self, method, value):
+                calls[method] = threading.current_thread()
+            def stop_capture(self):
+                pass
+        requests = io.StringIO(''.join(json.dumps({'id': i, 'method': method}) + '\n' for i, method in enumerate(['load', 'transcribe'])))
+        with patch.object(worker, 'Worker', FakeWorker), patch.object(worker.sys, 'stdin', requests), patch.object(worker, 'emit'):
+            worker.main()
+        self.assertIs(calls['load'], owner)
+        self.assertIsNot(calls['transcribe'], owner)
+
     def test_model_and_alignment_use_cpu_even_with_an_old_cuda_preference(self):
         calls = []
         def load_model(model, device, **options):

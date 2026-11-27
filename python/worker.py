@@ -181,7 +181,8 @@ def main():
                 if len(line) > 65536:
                     raise ValueError("Worker request too large.")
                 request = json.loads(line)
-                if request["method"] in ("load", "transcribe"):
+                # Native ML imports must finish before Windows stdin blocks the reader thread.
+                if request["method"] == "transcribe":
                     inference.submit(respond, request)
                 else:
                     respond(request)
