@@ -34,18 +34,32 @@ try {
     & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'native-smoke.cjs') $sample
     if ($LASTEXITCODE -ne 0) { throw 'Packaged offline CPU speech failed.' }
     $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9238'
-    $start.Arguments = ''
-    $launcher = [Diagnostics.Process]::Start($start)
+    $guiStart = New-Object Diagnostics.ProcessStartInfo
+    $guiStart.FileName = $executablePath
+    $guiStart.UseShellExecute = $false
+    $guiStart.RedirectStandardOutput = $true
+    $guiStart.RedirectStandardError = $true
+    $guiStart.EnvironmentVariables['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+    $guiStart.EnvironmentVariables['MEETING_DATA_DIR'] = $env:MEETING_DATA_DIR
+    $launcher = [Diagnostics.Process]::Start($guiStart)
+    $guiErrors = $launcher.StandardError.ReadToEndAsync()
     try {
         $kind = if ($AllowPrivateDefaults) { 'private' } else { 'public' }
         & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'verify-portable-ui.cjs') $kind
         if ($LASTEXITCODE -ne 0) { throw 'Packaged GUI startup failed.' }
+    } catch {
+        Write-Output ('Launcher exited: ' + $launcher.HasExited)
+        foreach ($child in Get-CimInstance Win32_Process -Filter ("ParentProcessId = " + $launcher.Id)) {
+            Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue | Select-Object ProcessName,MainWindowTitle,MainWindowHandle
+        }
+        throw
     } finally {
         foreach ($child in Get-CimInstance Win32_Process -Filter ("ParentProcessId = " + $launcher.Id)) {
             $process = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
             if ($process) { [void]$process.CloseMainWindow(); if (!$process.WaitForExit(15000)) { $process.Kill() } }
         }
         if (!$launcher.WaitForExit(15000)) { $launcher.Kill() }
+        if ($guiErrors.IsCompleted -and $guiErrors.Result) { Write-Output $guiErrors.Result }
         Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
     }
     Write-Output ('Portable extraction and offline speech passed: ' + $directory)

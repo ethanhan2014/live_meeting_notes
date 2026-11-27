@@ -38,7 +38,7 @@ static class PortableLauncher
                 string marker = Path.Combine(directory, ".complete");
                 if (File.Exists(marker) && File.ReadAllText(marker) == PayloadHash) return directory;
                 Directory.CreateDirectory(parent);
-                string staging = directory + ".partial-" + Guid.NewGuid().ToString("N");
+                string staging = Path.Combine(parent, ".partial-" + Guid.NewGuid().ToString("N"));
                 using (var progress = new Form())
                 {
                     progress.Text = "Live Meeting Notes";

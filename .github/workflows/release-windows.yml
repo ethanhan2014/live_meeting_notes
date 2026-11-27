@@ -25,6 +25,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          cache-on-failure: true
       - run: npm ci
       - run: npm test
       - run: python -m unittest discover -s test -p 'test_*.py'
@@ -40,6 +41,7 @@ jobs:
           ./scripts/build-portable-windows.ps1 -PayloadDirectory resources/portable -Output $portable
           ./scripts/verify-portable-windows.ps1 -Executable $portable
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: windows-x64-release
           compression-level: 0
