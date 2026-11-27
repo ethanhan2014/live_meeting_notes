@@ -33,5 +33,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Packaged Python runtime failed.' }
     & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'native-smoke.cjs') $sample
     if ($LASTEXITCODE -ne 0) { throw 'Packaged offline CPU speech failed.' }
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9238'
+    $start.Arguments = ''
+    $launcher = [Diagnostics.Process]::Start($start)
+    try {
+        $kind = if ($AllowPrivateDefaults) { 'private' } else { 'public' }
+        & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'verify-portable-ui.cjs') $kind
+        if ($LASTEXITCODE -ne 0) { throw 'Packaged GUI startup failed.' }
+    } finally {
+        foreach ($child in Get-CimInstance Win32_Process -Filter ("ParentProcessId = " + $launcher.Id)) {
+            $process = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
+            if ($process) { [void]$process.CloseMainWindow(); if (!$process.WaitForExit(15000)) { $process.Kill() } }
+        }
+        if (!$launcher.WaitForExit(15000)) { $launcher.Kill() }
+        Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
+    }
     Write-Output ('Portable extraction and offline speech passed: ' + $directory)
 } finally { Remove-Item $temporary -Recurse -Force }

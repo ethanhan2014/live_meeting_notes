@@ -25,6 +25,8 @@ try {
             if ($name -match '(^|/)(__pycache__|\.locks)/') { continue }
             # WhisperX does not compile C++ extensions; omit PyTorch's developer files.
             if ($name -match '^python/Lib/site-packages/torch/(include/|lib/[^/]+\.lib$)') { continue }
+            # Snapshot symlinks are copied as ordinary files, so cached blobs would duplicate weights.
+            if ($name -match '^models/[^/]+/blobs/') { continue }
             [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $name, [IO.Compression.CompressionLevel]::Optimal) | Out-Null
         }
     } finally { $zip.Dispose() }

@@ -4,6 +4,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -73,6 +75,17 @@ static class PortableLauncher
                                     Application.DoEvents();
                                 }
                             }
+                        }
+                        // Fixed WebView2 120+ needs AppContainer read access on Windows 10.
+                        string browser = Path.Combine(staging, "webview2");
+                        if (Directory.Exists(browser))
+                        {
+                            var permissions = Directory.GetAccessControl(browser);
+                            foreach (string sid in new [] { "S-1-15-2-1", "S-1-15-2-2" })
+                                permissions.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(sid),
+                                    FileSystemRights.ReadAndExecute, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                                    PropagationFlags.None, AccessControlType.Allow));
+                            Directory.SetAccessControl(browser, permissions);
                         }
                         File.WriteAllText(Path.Combine(staging, ".complete"), PayloadHash);
                         Directory.Move(staging, directory);
