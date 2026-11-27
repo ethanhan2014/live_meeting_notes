@@ -1,16 +1,17 @@
 const assert = require('node:assert/strict');
 
 async function verify() {
-  let page;
+  let page, pages = [], connectionError = '';
   const deadline = Date.now() + 45000;
   while (Date.now() < deadline) {
     try {
-      const pages = await (await fetch('http://127.0.0.1:9238/json/list')).json();
+      pages = await (await fetch('http://127.0.0.1:9238/json/list')).json();
       page = pages.find(value => value.url.includes('tauri.localhost'));
       if (page) break;
-    } catch {}
+    } catch (error) { connectionError = error.message; }
     await new Promise(resolve => setTimeout(resolve, 250));
   }
+  if (!page) console.error('[portable-check] Browser targets: ' + JSON.stringify(pages.map(value => value.url)) + '; connection: ' + connectionError);
   assert.ok(page, 'The portable app did not open its local interface.');
   const socket = new WebSocket(page.webSocketDebuggerUrl);
   try {

@@ -48,9 +48,9 @@ try {
         & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'verify-portable-ui.cjs') $kind
         if ($LASTEXITCODE -ne 0) { throw 'Packaged GUI startup failed.' }
     } catch {
-        Write-Output ('Launcher exited: ' + $launcher.HasExited)
+        Write-Output ('[portable-check] Launcher: ' + (@{exited=$launcher.HasExited;title=$launcher.MainWindowTitle;handle=$launcher.MainWindowHandle.ToInt64()} | ConvertTo-Json -Compress))
         foreach ($child in Get-CimInstance Win32_Process -Filter ("ParentProcessId = " + $launcher.Id)) {
-            Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue | Select-Object ProcessName,MainWindowTitle,MainWindowHandle
+            Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue | Select-Object ProcessName,MainWindowTitle,MainWindowHandle | ConvertTo-Json -Compress | Write-Output
         }
         throw
     } finally {
@@ -58,8 +58,8 @@ try {
             $process = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
             if ($process) { [void]$process.CloseMainWindow(); if (!$process.WaitForExit(15000)) { $process.Kill() } }
         }
-        if (!$launcher.WaitForExit(15000)) { $launcher.Kill() }
-        if ($guiErrors.IsCompleted -and $guiErrors.Result) { Write-Output $guiErrors.Result }
+        if (!$launcher.WaitForExit(15000)) { $launcher.Kill(); $launcher.WaitForExit() }
+        if ($guiErrors.Result) { Write-Output ('[portable-check] ' + $guiErrors.Result) }
         Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
     }
     Write-Output ('Portable extraction and offline speech passed: ' + $directory)
