@@ -1,77 +1,19 @@
-whisper.cpp and bundled ggml
-https://raw.githubusercontent.com/ggml-org/whisper.cpp/b5454/LICENSE
+Live Meeting Notes uses these third-party components:
 
-MIT License
+Tauri (MIT / Apache-2.0): https://github.com/tauri-apps/tauri
+Node.js (MIT and bundled third-party licenses): https://github.com/nodejs/node/blob/main/LICENSE
 
-Copyright (c) 2023-2026 The ggml authors
+The separately installed speech environment uses:
+WhisperX (BSD-2-Clause): https://github.com/m-bain/whisperX/blob/v3.8.6/LICENSE
+SoundCard (BSD-3-Clause): https://github.com/bastibe/SoundCard/blob/master/LICENSE
+faster-whisper (MIT): https://github.com/SYSTRAN/faster-whisper
+CTranslate2 (MIT): https://github.com/OpenNMT/CTranslate2
+PyTorch (BSD-3-Clause): https://github.com/pytorch/pytorch
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Downloaded speech weights retain their upstream licenses, including OpenAI
+Whisper (MIT), Silero VAD (MIT), and the English wav2vec2 alignment model.
+Check each model's distribution terms before redistributing weights. Models
+and the Python environment are not included in this app's installer.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-Whisper model
-https://raw.githubusercontent.com/openai/whisper/main/LICENSE
-
-MIT License
-
-Copyright (c) 2022 OpenAI
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-Silero VAD model v6.2.0
-https://github.com/snakers4/silero-vad
-https://huggingface.co/ggml-org/whisper-vad/tree/9ffd54a1e1ee413ddf265af9913beaf518d1639b
-
-MIT License
-
-Copyright (c) 2020-present Silero Team
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Packaging includes the Node.js LICENSE for the exact bundled runtime,  Rust dependency licenses can be inspected
+from Cargo.lock and the corresponding upstream crates.

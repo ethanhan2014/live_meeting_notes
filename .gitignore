@@ -40,3 +40,9 @@ ui-*.png
 *.log
 .DS_Store
 Thumbs.db
+
+.venv/
+__pycache__/
+src-tauri/target/
+src-tauri/gen/
+!python/requirements.txt

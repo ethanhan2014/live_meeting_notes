@@ -1,90 +1,26 @@
 {
   "name": "live-meeting-notes",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "Local English meeting transcription and notes for Windows and macOS",
-  "main": "main.cjs",
+  "description": "Tauri desktop meeting transcription with local WhisperX and AI notes",
   "scripts": {
-    "start": "electron .",
+    "start": "tauri dev",
+    "dev:web": "vite",
+    "build:web": "vite build",
     "test": "node --test",
-    "build:win": "electron-builder --win --x64",
-    "postinstall": "node node_modules/electron/install.js",
+    "test:python": "python3 -m unittest discover -s test -p 'test_*.py'",
     "prepare:resources": "node scripts/prepare-resources.cjs",
-    "dist:win": "electron-builder --win --x64",
-    "dist:mac": "electron-builder --mac"
+    "build": "tauri build",
+    "build:win": "tauri build",
+    "dist:win": "tauri build",
+    "dist:mac": "tauri build --bundles app,dmg",
+    "release:mac": "node scripts/release-macos.cjs"
   },
   "devDependencies": {
-    "electron": "45.2.1",
-    "electron-builder": "26.18.0"
+    "@tauri-apps/cli": "^2.10.0",
+    "vite": "^7.3.0"
   },
   "dependencies": {
-    "smol-toml": "1.9.1"
-  },
-  "build": {
-    "appId": "local.live-meeting-notes",
-    "productName": "Live Meeting Notes",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.cjs",
-      "preload.cjs",
-      "lib/**/*",
-      "renderer/**/*",
-      "LICENSE",
-      "THIRD-PARTY-NOTICES.txt",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "schemas",
-        "to": "schemas",
-        "filter": [
-          "*.json"
-        ]
-      },
-      {
-        "from": "resources",
-        "to": "resources",
-        "filter": [
-          "manifest.json",
-          "whisper/*",
-          "models/*"
-        ]
-      }
-    ],
-    "win": {
-      "target": [
-        "portable",
-        "nsis"
-      ],
-      "signAndEditExecutable": false
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "artifactName": "Live-Meeting-Notes-${version}-mac-${arch}.${ext}",
-      "category": "public.app-category.productivity",
-      "minimumSystemVersion": "14.2",
-      "identity": "-",
-      "hardenedRuntime": true,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
-      "signIgnore": [
-        "Contents/Resources/resources/whisper/"
-      ],
-      "extendInfo": {
-        "NSMicrophoneUsageDescription": "Transcribe your microphone during meetings.",
-        "NSAudioCaptureUsageDescription": "Transcribe meeting audio from other apps."
-      }
-    },
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false,
-      "deleteAppDataOnUninstall": false
-    },
-    "npmRebuild": false
+    "@tauri-apps/api": "^2.10.0"
   }
 }

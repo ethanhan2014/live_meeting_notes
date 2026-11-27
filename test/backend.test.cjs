@@ -1,0 +1,25 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {spawn}=require('node:child_process');
+const {createInterface}=require('node:readline');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const os=require('node:os');
+test('desktop backend preserves sessions and refuses unknown commands over stdio',async t=>{
+ const data=await fs.mkdtemp(path.join(os.tmpdir(),'meeting-backend-'));t.after(()=>fs.rm(data,{recursive:true,force:true}));
+ const child=spawn(process.execPath,[path.join(__dirname,'..','main.cjs')],{env:{...process.env,MEETING_DATA_DIR:data}});t.after(()=>child.kill());
+ const pending=new Map();let sequence=0,diagnostic='';child.stderr.on('data',value=>{diagnostic+=value;});
+ const lines=createInterface({input:child.stdout});lines.on('line',line=>{const value=JSON.parse(line);if(value.id)pending.get(value.id)?.(value);});
+ const call=(method,args=[])=>new Promise((resolve,reject)=>{const id=++sequence;const timer=setTimeout(()=>reject(new Error('Backend timed out: '+diagnostic)),15000);pending.set(id,value=>{clearTimeout(timer);pending.delete(id);value.error?reject(new Error(value.error)):resolve(value.value);});child.stdin.write(JSON.stringify({id,method,args})+'\n');});
+ const state=await call('meeting-state-get');assert.equal(state.active,false);assert.equal(state.scriptsDirectory,path.join(data,'scripts'));
+ const configured=await call('meeting-settings',[{...state.settings,apiKey:'synthetic-secret-key',summaryModel:'local-model'}]);
+ assert.equal(configured.settings.apiKey,'');assert.equal(configured.hasApiKey,true);
+ assert.match(await fs.readFile(path.join(data,'.env'),'utf8'),/synthetic-secret-key/);
+ assert.ok(!(await fs.readFile(path.join(data,'settings.json'),'utf8')).includes('synthetic-secret-key'));
+ await assert.rejects(call('unknown'),/Unknown/);
+ const input=path.join(data,'input.txt');await fs.writeFile(input,'Alex will send the report.');
+ const imported=await call('meeting-import-transcript',[input]);assert.equal(imported.session.transcript[0].text,'Alex will send the report.');
+ await call('meeting-shutdown');assert.equal((await fs.readdir(path.join(data,'sessions'))).filter(name=>name.endsWith('.json')).length,1);
+ const files=await fs.readdir(path.join(data,'scripts'));const markdown=files.find(name=>name.endsWith('.md'));assert.ok(markdown);
+ assert.match(await fs.readFile(path.join(data,'scripts',markdown),'utf8'),/## Transcript/);
+});

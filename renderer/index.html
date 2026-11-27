@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; worker-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self'">
   <title>Live Meeting Notes</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -11,7 +11,7 @@
   <header>
     <div class="brand-mark" aria-hidden="true">≋</div>
     <div><h1>Live Meeting Notes</h1><p class="subtitle">Listen now. Leave with clarity.</p></div>
-    <div class="header-status"><span id="status-dot" class="dot"></span><span id="status" role="status">Preparing speech model…</span></div>
+    <div class="header-status"><span id="status-dot" class="dot"></span><span id="status" role="status">Ready · WhisperX loads on Start</span></div>
   </header>
   <main>
     <section class="controls" aria-label="Recording controls">
@@ -22,21 +22,25 @@
       <div class="audio-tools"><button id="audio-test" class="quiet">Test audio</button><button id="calibrate" class="quiet" disabled>Calibrate silence (3s)</button><span id="audio-status" role="status">Test your microphone and system audio before recording.</span></div><p class="capture-facts">Captures all system sound and your microphone. Teams mute does not mute this recording.</p>
     </section>
     <div class="history-bar"><label for="history">Session history</label><select id="history"><option value="">No saved sessions</option></select><button id="open-session" class="small" disabled>Open</button><button id="recover" class="small" hidden>Recover pending audio</button><span id="recovery-info" role="status"></span></div>
-    <div class="history-bar"><label for="transcript-file">Saved transcripts</label><select id="transcript-file"><option value="">No TXT transcripts</option></select><button id="load-transcript" class="small" disabled>Load TXT</button><button id="import-transcript" class="small">Browse TXT…</button><button id="rescan" class="small">Rescan agents &amp; files</button></div>
-    <details class="configuration"><summary>Audio, AI agents and transcript settings</summary>
+    <div class="history-bar"><label for="transcript-file">Saved transcripts</label><select id="transcript-file"><option value="">No TXT transcripts</option></select><button id="load-transcript" class="small" disabled>Load TXT</button><button id="import-transcript" class="small">Browse TXT…</button><button id="rescan" class="small">Refresh devices &amp; files</button></div>
+    <details class="configuration"><summary>Audio, AI API and transcript settings</summary>
       <form id="settings-form">
         <label>Microphone gain <input id="mic-gain" type="range" min="0" max="3" step="0.1" value="1"><output id="mic-gain-value">1.0×</output></label>
         <label>System audio gain <input id="system-gain" type="range" min="0" max="3" step="0.1" value="1"><output id="system-gain-value">1.0×</output></label>
         <label>Silence threshold <input id="noise-threshold" type="number" min="0.0005" max="0.05" step="0.0001" value="0.004"></label>
         <label>Speech CPU thread limit <input id="threads" type="number" min="1" max="16" step="1" value="6"></label>
-        <label><input id="vad" type="checkbox"> Local voice activity detection</label>
-        <fieldset class="wide ai-choice"><legend>Summary, findings and action items</legend><label>Agent <select id="summary-agent"><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="opencode">OpenCode</option><option value="gemini">Gemini CLI</option></select></label><label>Model <input id="summary-model" maxlength="200" placeholder="Agent default" list="summary-models"><datalist id="summary-models"></datalist></label><label>Effort <select id="summary-effort"></select></label></fieldset>
-        <fieldset class="wide ai-choice"><legend>Open question answers</legend><label>Agent <select id="answer-agent"><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="opencode">OpenCode</option><option value="gemini">Gemini CLI</option></select></label><label>Model <input id="answer-model" maxlength="200" placeholder="Agent default" list="answer-models"><datalist id="answer-models"></datalist></label><label>Effort <select id="answer-effort"></select></label></fieldset>
-        <p class="muted wide">Blank model or Default effort uses the agent's own setting. OpenCode expects provider/model and a supported variant. Gemini effort sets a thinking budget: low 1,024, medium 4,096, high 8,192 tokens; choose Default for models that do not support it. Sign in through each installed CLI before using it here.</p>
+        <label>WhisperX model <select id="speech-model"><option value="base.en">Base English</option><option value="small.en">Small English</option><option value="medium.en">Medium English</option><option value="large-v3">Large v3</option></select></label>
+        <label>Batch size <input id="batch-size" type="number" min="1" max="32" value="4"></label>
+        <label class="wide">Python interpreter (blank = project .venv or PATH)<input id="python-path" type="text" maxlength="4096" autocomplete="off" placeholder="Absolute path to Python with WhisperX installed"></label>
+        <label>AI provider <select id="api-provider"><option value="proxy">Local proxy (OpenAI compatible)</option><option value="gemini">Gemini API</option></select></label>
+        <label class="wide">AI API base URL <input id="api-base-url" type="url" maxlength="2048" autocomplete="off" placeholder="http://127.0.0.1:4000/v1"></label>
+        <label class="wide">API key <input id="api-key" type="password" maxlength="4096" autocomplete="off" placeholder="Optional for proxy; required for Gemini"></label>
+        <label>Summary model <input id="summary-model" maxlength="200" placeholder="Model served by your API" list="summary-models"><datalist id="summary-models"></datalist></label>
+        <label>Question/answer model <input id="answer-model" maxlength="200" placeholder="Blank uses summary model" list="answer-models"><datalist id="answer-models"></datalist></label>
+        <p class="muted wide">Uses HTTP APIs directly. No Codex or Claude CLI is needed. Saving persists the endpoint, key and models in the app's .env file for reuse. Leave the key blank to keep it when the endpoint is unchanged. Meeting text is sent to the configured API. Gemini supports Google Search grounding; proxy answers are marked unverified.</p>
         <label class="wide">TXT transcript folder (blank = default scripts folder)<span class="path-input"><input id="transcript-folder" type="text" maxlength="4096" autocomplete="off"><button id="pick-transcript-folder" type="button" class="small">Browse…</button></span></label>
-        <label class="wide">Native Codex executable (blank = automatic)<span class="path-input"><input id="codex-path" type="text" maxlength="4096" placeholder="C:\…\codex.exe" autocomplete="off"><button id="pick-codex" type="button" class="small">Browse…</button></span></label>
-        <div class="wide setting-actions"><button id="save-settings" type="submit">Save settings</button><button id="diagnostics" type="button">Test saved AI connections</button><span id="settings-status" role="status"></span></div>
-        <p class="muted wide">Gain changes preview during an audio test. Save after stopping the test. Calibration measures quiet audio; repeat it when your devices change. VAD is optional: this backend may repeat words at chunk boundaries when it is enabled. AI diagnostics use a synthetic question and your configured online services.</p>
+        <div class="wide setting-actions"><button id="save-settings" type="submit">Save settings</button><button id="diagnostics" type="button">Test AI API connection</button><span id="settings-status" role="status"></span></div>
+        <p class="muted wide">Gain changes preview during an audio test. Save after stopping the test. Calibration measures quiet audio; repeat it when your devices change. WhisperX uses Silero VAD and word alignment. First Start downloads models; larger models need more memory and can increase live delay. AI diagnostics use a synthetic question and your configured online services.</p>
         <p id="diagnostic-result" class="wide" role="status"></p>
       </form>
     </details>
@@ -61,11 +65,11 @@
           <section id="notes-actions" role="tabpanel" aria-labelledby="tab-actions" tabindex="0" hidden></section>
           <section id="notes-questions" role="tabpanel" aria-labelledby="tab-questions" tabindex="0" hidden></section>
         </div>
-        <div class="panel-footer">Notes and research use your selected AI agents.</div>
+        <div class="panel-footer">Notes and answers use your configured AI API.</div>
       </section>
     </div>
   </main>
-  <footer><span id="saved-status">Transcript and notes save locally.</span><div class="exports"><span class="export-label">EXPORT ALL</span><button id="export-txt" disabled>TXT ↗</button><button id="export-md" disabled>Markdown ↗</button></div></footer>
+  <footer><span id="saved-status">Transcript, summary, tasks and answers save as Markdown.</span><div class="exports"><span class="export-label">EXPORT ALL</span><button id="export-txt" disabled>TXT ↗</button><button id="export-md" disabled>Markdown ↗</button></div></footer>
   <dialog id="edit-dialog" aria-labelledby="edit-title"><form id="edit-form"><h2 id="edit-title">Edit</h2><p id="edit-help" class="muted"></p><div id="edit-fields"></div><p id="edit-error" role="alert"></p><div class="dialog-actions"><button id="edit-cancel" type="button">Cancel</button><button id="edit-save" type="submit" class="primary">Save correction</button></div></form></dialog>
   <script type="module" src="app.js"></script>
 </body>

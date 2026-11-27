@@ -1,5 +1,23 @@
 # Verification record
 
+## Tauri / WhisperX rebuild (0.4.0)
+
+Checked on 2026-11-27 in Linux/WSL. This section supersedes the Electron runtime/engine checks below for the current source.
+
+- 90 Node tests passed, including meeting persistence, HTTP API adapters, dotenv reuse/default seeding, Markdown saving, startup capture failures, and quiet-period worker death.
+- Five Python worker tests passed, including CPU/int8 loading, alignment, and capture-thread COM cleanup.
+- Vite production builds produced both windows. Runtime preparation copied Windows Node, the backend, worker sources, schemas, and the Node runtime license.
+- Rust compilation, including test targets, passed with native development packages extracted into a temporary Linux sysroot. This did not install packages into the host OS.
+- The Windows x64 release compiled, and Tauri's Windows packager produced an NSIS installer. Packaged source files and Windows PE architectures were verified after extraction.
+- The Windows app launched with an isolated profile and rendered live backend state. The Node entry uses a relative path because Windows verbatim entry paths caused Node to exit before controls connected.
+- The supplied local proxy successfully generated validated synthetic notes using gpt-6-luna. Private API defaults are bundled in .env for first-launch seeding; keys are absent from Git-visible source and webview state. Live Gemini calls remain unverified.
+- The Rust navigation test passed, accepting the app's local origins and rejecting external pages.
+- A real WhisperX 3.8.6 CPU/int8 inference recognized a 5.5-second public JFK speech excerpt and returned word timings in 2,118 ms with the final dependency set. NumPy 2.2.6 also passed SoundCard's WASAPI binary-array compatibility check; newer NumPy removes that API. These are short checks, not a sustained meeting benchmark.
+
+Actual WASAPI microphone/loopback capture, macOS BlackHole routing, device hot-plug, suspend, the installer UI, signing, and long meetings still need native verification. Python/WhisperX remains a separate prerequisite; previous portable Electron releases do not represent this rebuild. The private installer contains the configured API key and should not be published.
+
+---
+
 ## Version 0.3.0
 
 Checked on 2026-11-04. Native builds use commit `bfbafbca65b1d65cfd3416da8bfe31811442973e`; the later documentation update does not change packaged application files. All three jobs passed in [desktop build run 41916581472](https://github.com/ethanhan2014/live_meeting_notes/actions/runs/41916581472).

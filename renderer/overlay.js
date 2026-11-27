@@ -1,3 +1,4 @@
+import './bridge.js';
 const $=id=>document.getElementById(id);let transcriptKey='';
 function render(state){
   $('status').textContent=state.busy==='finishing'?'Finishing transcription…':state.paused?'Paused':state.pending?`${state.pending} audio chunks pending`:'Listening…';

@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.8.0+cpu; sys_platform == 'win32' or sys_platform == 'linux'
+torchaudio==2.8.0+cpu; sys_platform == 'win32' or sys_platform == 'linux'
+torchvision==0.23.0+cpu; sys_platform == 'win32' or sys_platform == 'linux'
+whisperx==3.8.6
+SoundCard==0.4.5
+# SoundCard WASAPI uses binary fromstring, removed in NumPy 2.3.
+numpy==2.2.6

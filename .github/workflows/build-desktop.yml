@@ -1,25 +1,12 @@
-name: Build desktop apps
-
+name: Build Tauri desktop apps
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: windows-latest
-            arch: x64
-          - runner: macos-15
-            arch: arm64
-          - runner: macos-15-intel
-            arch: x64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 40
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,39 +15,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm test
-      - run: npm run prepare:resources
-      - name: Native Mac speech check
-        if: runner.os == 'macOS'
-        run: |
-          say -o "$RUNNER_TEMP/english.aiff" "Alex will check the release date."
-          afconvert -f WAVE -d LEI16@16000 -c 1 "$RUNNER_TEMP/english.aiff" "$RUNNER_TEMP/english.wav"
-          node scripts/native-smoke.cjs "$RUNNER_TEMP/english.wav"
-      - name: Build Windows portable app
-        if: runner.os == 'Windows'
-        run: npx --no-install electron-builder --win portable --x64 --publish never
-      - name: Verify Windows package
-        if: runner.os == 'Windows'
-        run: node scripts/verify-package.cjs dist/win-unpacked/resources
-      - name: Build Mac app
-        if: runner.os == 'macOS'
-        run: npm run dist:mac -- --${{ matrix.arch }} --publish never
-      - name: Verify Mac package and startup
-        if: runner.os == 'macOS'
-        run: |
-          app="$(find dist -maxdepth 2 -name 'Live Meeting Notes.app' -type d -print -quit)"
-          test -n "$app"
-          codesign --verify --deep --strict "$app"
-          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c 'Print :NSAudioCaptureUsageDescription' "$app/Contents/Info.plist"
-          node scripts/verify-package.cjs "$app/Contents/Resources"
-          node scripts/packaged-smoke.cjs "$app/Contents/MacOS/Live Meeting Notes"
+      - run: python -m unittest discover -s test -p 'test_*.py'
+      - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.runner }}-${{ matrix.arch }}
-          path: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.zip
+          name: tauri-windows-x64
+          path: src-tauri/target/release/bundle/**
           if-no-files-found: error
+  macos:
+    uses: ./.github/workflows/release-macos.yml
+    permissions:
+      contents: write

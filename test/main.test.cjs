@@ -2,29 +2,39 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const {CodexJobs}=require('../lib/codex.cjs');
+const {AIJobs}=require('../lib/ai.cjs');
 const path=require('node:path');
 
-test('Mac transcript files stay outside the app bundle and custom folders are preserved',()=>{
- const context=vm.createContext({path:path.posix,process:{platform:'darwin',env:{}},settings:{transcriptFolder:''},__dirname:'/source',app:{isPackaged:true,getPath:name=>{assert.equal(name,'userData');return '/Users/example/Library/Application Support/Live Meeting Notes';}}});
- const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function transcriptDirectory()'),source.indexOf('function state()')),context);
- assert.equal(vm.runInContext('transcriptDirectory()',context),'/Users/example/Library/Application Support/Live Meeting Notes/scripts');
- context.settings.transcriptFolder='/Users/example/Notes';assert.equal(vm.runInContext('transcriptDirectory()',context),'/Users/example/Notes');
- context.settings.transcriptFolder='';context.app.isPackaged=false;assert.equal(vm.runInContext('transcriptDirectory()',context),'/source/scripts');
- context.path=path.win32;context.process={platform:'win32',env:{PORTABLE_EXECUTABLE_DIR:'C:\\Downloads'}};context.app.isPackaged=true;
- assert.equal(vm.runInContext('transcriptDirectory()',context),'C:\\Downloads\\scripts');
+test('a capture failure during initial persistence stops and marks the session incomplete',async()=>{
+ for(const kind of ['device','worker']){
+ let options,stops=0;const handlers=new Map();
+ const recording={active:false,session:null,start:async()=>{if(kind==='device')options.onCaptureError('Device disconnected');else options.onState({failure:new Error('Worker disconnected')});recording.session={};recording.active=true;},stop:async()=>{stops++;recording.active=false;recording.session.status='incomplete';}};
+ const speech={startCapture:async()=>{},stopCapture:async()=>{}};
+ const context=vm.createContext({SpeechEngine:class{constructor(_resources,value){options=value;}},resources:'unused',settings:{},speechState(){},testing:false,safeError:String,recording,speech,changed(){},idle(){},ensureSpeech:async()=>{},refresh:async()=>{},finishClose(){},state:()=>({}),handle:(name,action)=>handlers.set(name,action),closing:false});
+ const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');
+ vm.runInContext(source.slice(source.indexOf('function speechState('),source.indexOf('async function ensureSpeech('))+source.slice(source.indexOf('function makeSpeech()'),source.indexOf('async function initialize()'))+source.slice(source.indexOf("  handle('meeting-devices'"),source.indexOf("  handle('meeting-capture-failed'")),context);
+ vm.runInContext('makeSpeech()',context);
+ await assert.rejects(handlers.get('meeting-start')({microphone:''}),/disconnected/);
+ assert.equal(stops,1);assert.equal(recording.session.status,'incomplete');assert.match(recording.failure.message,/disconnected/);
+ }
+});
+test('worker death while quiet marks capture failed even without a queued chunk',()=>{
+ const context=vm.createContext({error:null,captureFailure:null,safeError:String,testing:false,recording:{active:true,session:{}},changed(){}});
+ const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function speechState('),source.indexOf('async function ensureSpeech(')),context);
+ context.failure={failure:new Error('Worker exited')};vm.runInContext('speechState(failure)',context);
+ assert.equal(context.captureFailure,'Worker exited');assert.match(context.recording.failure.message,/Worker exited/);
 });
 
 test('Cancel during the initial session save prevents the notes job from sending context', async () => {
   let release,started,runs=0,saves=0;
   const saving=new Promise(resolve => {started=resolve;});
-  const jobs=new CodexJobs('unused');
+  const jobs=new AIJobs({});
   jobs.run=async () => {runs++;return {value:{summary:'Notes',actions:[],questions:[]}};};
   const context=vm.createContext({jobs,root:'unused',recording:{session:{status:'complete',notes:null,transcript:[{start:0,end:1,text:'Test'}]}},
     changed(){},finishClose(){},saveSession:async () => {if (++saves === 1) {started();await new Promise(resolve => {release=resolve;});}},
     commitSession:async (_root,session,changes) => Object.assign(session,changes)});
   const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');
-  const noteFunction=source.slice(source.indexOf('async function notes('),source.indexOf('\napp.whenReady()'));
+  const noteFunction=source.slice(source.indexOf('async function notes('),source.indexOf('\nfunction makeSpeech()'));
   vm.runInContext(noteFunction,context);
   const pending=vm.runInContext('notes()',context);
   await saving;jobs.cancel();release();
@@ -43,7 +53,7 @@ test('regeneration preserves saved notes and answers on failure, then replaces t
  const session={status:'complete',notes:oldNotes,answers,transcript:[{start:0,end:1,text:'Test.'}]};
  const jobs={cancelled:false,notes:async()=>{throw new Error('provider unavailable');}};
  const context=vm.createContext({jobs,root:'unused',recording:{session},changed(){},finishClose(){},saveSession:async(_root,value)=>saves.push(structuredClone(value)),commitSession:async(_root,value,changes)=>Object.assign(value,changes)});
- const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('async function notes('),source.indexOf('\napp.whenReady()')),context);
+ const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('async function notes('),source.indexOf('\nfunction makeSpeech()')),context);
  await assert.rejects(vm.runInContext('notes(true)',context),/unavailable/);
  assert.equal(session.notes,oldNotes);assert.equal(session.answers,answers);assert.equal(saves.at(-1).status,'complete');
  jobs.notes=async()=>({summary:'New summary',actions:[],questions:[]});await vm.runInContext('notes(true)',context);
@@ -51,16 +61,10 @@ test('regeneration preserves saved notes and answers on failure, then replaces t
 });
 test('automatic TXT saves serialize snapshots and a folder failure leaves recording intact',async()=>{
  const session=structuredClone(require('./fixtures/meeting.json')),writes=[];
- const context=vm.createContext({structuredClone,recording:{session,active:true},scriptKey:'',scriptWrites:Promise.resolve(),scriptFiles:[],window:null,overlay:null,
+ const context=vm.createContext({structuredClone,recording:{session,active:true},scriptKey:'',scriptWrites:Promise.resolve(),scriptFiles:[],send(){},
   transcriptDirectory:()=>'/scripts',state:()=>({}),listTranscripts:async()=>[],safeError:String,saveTranscript:async(_folder,value)=>{writes.push(value);throw new Error('folder unavailable');}});
- const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function broadcast()'),source.indexOf('function trusted(')),context);
+ const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function broadcast()'),source.indexOf('function finishClose(')),context);
  await vm.runInContext('changed();scriptWrites',context);assert.equal(context.recording.active,true);assert.match(context.scriptSaveError,/folder unavailable/);assert.equal(session.notes.actions[0].done,undefined);
  context.saveTranscript=async(_folder,value)=>writes.push(value);session.notes.actions[0].done=true;await vm.runInContext('changed();scriptWrites',context);
  assert.equal(writes[0].notes.actions[0].done,undefined);assert.equal(writes[1].notes.actions[0].done,true);assert.equal(context.scriptSaveError,null);
-});
-test('compact recording panel fits at the right edge of the current monitor',()=>{
- const context=vm.createContext({});const source=fs.readFileSync(require.resolve('../main.cjs'),'utf8');vm.runInContext(source.slice(source.indexOf('function compactBounds('),source.indexOf('function restoreWindow(')),context);
- context.area={x:-1920,y:40,width:1920,height:1040};const bounds=vm.runInContext('compactBounds(area)',context);
- assert.equal(bounds.x+bounds.width,0);assert.equal(bounds.width,340);assert.equal(bounds.y,40);assert.equal(bounds.height,1040);
- context.area={x:100,y:0,width:300,height:600};assert.equal(vm.runInContext('compactBounds(area).width',context),300);
 });

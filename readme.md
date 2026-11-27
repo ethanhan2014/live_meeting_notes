@@ -1,146 +1,105 @@
 # Live Meeting Notes
 
-[Download Windows and Mac builds](https://github.com/ethanhan2014/live_meeting_notes/releases/latest). The runtime and English speech resources are bundled. AI notes require an installed, authenticated AI CLI.
+A Tauri 2 desktop app that transcribes live meetings locally with [WhisperX](https://github.com/m-bain/whisperX), then generates AI summaries, action items, and open questions after Stop. Windows and Apple Silicon macOS builds are available; macOS uses BlackHole audio routing.
 
-An Electron app for Windows and macOS that transcribes meeting audio locally and turns the transcript into notes using an installed AI CLI.
+The existing interface, session history, corrections, action checkboxes, sourced question research, TXT imports, and TXT/Markdown exports are retained. Tauri owns windows/dialogs; a bundled Node backend retains the tested meeting and AI logic. A persistent Python worker handles native capture and WhisperX recognition/alignment. Earlier GitHub release downloads are still Electron builds.
 
-- Live English transcription of system audio and microphone input with whisper.cpp.
-- Separate **Summary**, **Action items**, and **Open questions** tabs, with key findings and key points.
-- Persistent action checkboxes and researched answers with validated source links.
-- Detection of **Codex**, **Claude Code**, **OpenCode**, and **Gemini CLI**, with separate agent/model/effort choices for summaries and answers.
-- A narrow recording panel at the current screen's right edge, with **70% opacity**, live text, and Stop.
-- Local session history, TXT transcript loading, automatic TXT saving, and complete TXT/Markdown exports.
+## Run from source
 
-## Requirements
+Install Node.js 22.12 or later, stable Rust, Python 3.10–3.13 (3.12 recommended), and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). Windows needs Microsoft C++ Build Tools and WebView2; macOS needs Xcode Command Line Tools. Linux needs GTK 3, WebKitGTK 4.1, DBus development libraries, and PulseAudio/PipeWire.
 
-Windows 10/11 x64, or macOS 14.2 or later on Apple Silicon or Intel. Microphone and system audio access are required. Running from source also requires Node.js 22 or later and npm. Install and authenticate at least one supported AI CLI; its provider must support the selected model. Internet access is needed for setup downloads and online AI/search services. Speech recognition runs locally after setup.
-
-On Windows, put the portable EXE in a writable folder. On Mac, choose `arm64` for Apple Silicon or `x64` for Intel, open the DMG, and drag **Live Meeting Notes.app** into Applications. Allow microphone, screen recording and system audio recording in **System Settings → Privacy & Security**. Restart the app after changing permissions.
-
-## Quick start
-
-Run in PowerShell:
+Windows PowerShell:
 
 ```powershell
-git clone https://github.com/ethanhan2014/live_meeting_notes.git
-cd live_meeting_notes
 npm ci
-npm run prepare:resources
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r python/requirements.txt
 npm start
 ```
 
-After setup, you can also double-click `Start Live Meeting Notes.cmd`.
-
-`prepare:resources` downloads the pinned whisper.cpp Windows build, or builds static Mac binaries from checksum-verified `b5454` source. It also downloads the English `base.en` speech model and optional Silero voice activity model. SHA256 checksums are verified before use. Resources and dependencies are excluded from Git. Mac source builds require CMake and Xcode Command Line Tools; see the Mac build instructions below.
-
-## Record a meeting
-
-1. Select a microphone and click **Test audio**. Check both MIC and SYS meters.
-2. Open **Audio, AI agents and transcript settings**. Choose agents, models and effort, then save.
-3. Click **Start meeting**. The main app minimizes and the live transcript panel appears at the right edge of its screen.
-4. Click **Stop** in the panel. The app flushes pending audio, saves the transcript, restores the full window, and generates notes. **Expand** opens the full app while recording continues.
-5. Check completed action items, research individual questions, or export the complete document as TXT or Markdown.
-
-Capture includes all system sound. Teams mute does not mute this app's microphone; use **Mute mic** here. **Pause** silences both inputs while retaining elapsed meeting time. Headphones help reduce duplicate speaker audio entering the microphone.
-
-Mac capture uses Electron's CoreAudio Tap support and requires macOS 14.2 or later. Missing audio permissions can produce an ended audio track; the app stops and explains the required permissions before creating a meeting. For Mac recording, launch the packaged app from Finder: Terminal/IDE source launches can attribute audio permission to the parent program instead.
-
-Transcription arrives as short audio chunks finish recognition. The footer reports inference time, queue size, real-time factor and latency. Audio gain, CPU thread limit, silence threshold and optional VAD are configurable. Speech workers are capped at available CPU cores to avoid scheduling slowdowns; Mac builds use Apple's Accelerate framework. Silence calibration measures quiet input for three seconds; repeat it after changing devices.
-
-## AI agents and models
-
-Follow the official installation and authentication instructions for [Codex](https://github.com/openai/codex), [Claude Code](https://code.claude.com/docs/en/setup), [OpenCode](https://opencode.ai/docs/), or [Gemini CLI](https://github.com/google-gemini/gemini-cli). **Rescan agents & files** refreshes native executable and npm installation detection. Detection does not verify account access to a model.
-
-| Agent | Model setting | Effort setting |
-| --- | --- | --- |
-| Codex | A model supported by its configured provider | Minimal, low, medium, high, xhigh |
-| Claude Code | `sonnet`, `opus`, `haiku`, or a supported model ID | Low, medium, high, xhigh, max |
-| OpenCode | `provider/model` | A supported low, medium, high, or max variant |
-| Gemini CLI | A supported Gemini model ID | Low: 1,024; medium: 4,096; high: 8,192 thinking tokens |
-
-A blank model or **Default** effort uses the CLI's setting. Model support varies; use Default for Gemini models that do not accept a thinking budget. Summaries initially use Codex with `gpt-6-luna` and medium effort. Answers initially use the configured Codex model. Both choices can be changed independently.
-
-Codex uses the existing `%USERPROFILE%\.codex\config.toml` on Windows or `~/.codex/config.toml` on Mac, or `CODEX_HOME`. Its research adapter requires a `perplexity-litellm` MCP connector exposing `web_search` with structured citations. Other agents use built-in web search/fetch tools. Search availability depends on the CLI and provider.
-
-Summary jobs disable tools. Research jobs restrict tools to search/fetch, and accepted source URLs must come from completed tool results. Generated owners, dates and evidence are checked against the transcript. Failed or unsourced research remains unresolved. Jobs can be cancelled and have a ten-minute timeout.
-
-The app uses existing CLI authentication and does not change global credentials or configuration. Mac discovery checks PATH, Homebrew, user bin folders, Volta and nvm installations without running a login shell. You can select a native Codex executable manually if discovery fails. **Test saved AI connections** uses synthetic content to check the selected agents.
-
-## Transcripts and local storage
-
-- Each session automatically saves a complete TXT document. Windows defaults to the **scripts** folder beside the app. Mac defaults to `~/Library/Application Support/Live Meeting Notes/scripts`, outside the app bundle so recording preserves its signature. Choose another writable folder in settings when needed.
-- **Saved transcripts / Load TXT** opens files from that folder; **Browse TXT** imports other files.
-- Timed exports retain timestamps. Plain TXT passages use timestamp zero because timing metadata is absent.
-- An unchanged automatic TXT file reopens its saved session, including checked actions and answers. External edits import as new sessions; automatic saving preserves changed content in separate `edited-…txt` copies.
-- Session JSON and settings live under `%APPDATA%\Live Meeting Notes` on Windows, or `~/Library/Application Support/Live Meeting Notes` on Mac. History and audio recovery use the JSON store.
-- Transcript corrections invalidate notes and answers. Question corrections invalidate only that answer. Regeneration replaces notes, resets action completion and clears answers after successful saving; saved corrections, answers and checked actions trigger confirmation.
-- Processed audio is deleted after successful transcript persistence. Pending audio retains timing journals for recovery. Missing or corrupt data remains marked incomplete.
-
-TXT save errors are displayed without interrupting recording. Session JSON remains durable; TXT documents are rebuilt on the next startup.
-
-## Privacy
-
-Speech recognition runs on your computer. AI summaries send transcript context to the selected CLI's provider. Research sends the question and nearby passages to the selected agent and its search service.
-
-Saved transcripts contain meeting information. Credentials, settings, recordings, generated transcripts, dependencies and build output are excluded by `.gitignore`. This repository contains application source, synthetic test fixtures and public-speech benchmark results.
-
-## Build for Windows
-
-```powershell
-npm test
-npm run dist:win
-```
-
-Prepare resources first if they are missing. Electron Builder creates the portable `dist\Live Meeting Notes 0.3.0.exe` and installer `dist\Live Meeting Notes Setup 0.3.0.exe`. Builds are unsigned; Windows or organizational policy may require signing or approval. The installer preserves local session data on uninstall.
-
-## Build for Mac
-
-On the Mac that will build the app, install Xcode Command Line Tools and CMake:
-
-```bash
-xcode-select --install
-brew install cmake
-```
-
-Then run from the project folder:
+macOS/Linux:
 
 ```bash
 npm ci
+python3 -m venv .venv
+.venv/bin/python -m pip install -r python/requirements.txt
+npm start
+```
+
+The requirements install CPU-only PyTorch on Windows/Linux. WhisperX always uses CPU with int8 inference; no CUDA runtime is needed. Choose the model, batch size, and thread limit in Settings. If TorchCodec reports FFmpeg loading errors, follow [TorchCodec's FFmpeg installation instructions](https://github.com/pytorch/torchcodec#installing-torchcodec), including shared DLLs on Windows.
+
+The worker uses the project's `.venv`, or an absolute **Python interpreter** path in Settings, or `MEETING_PYTHON`. That interpreter must have the requirements installed. First Start downloads speech/alignment/VAD weights and may take several minutes. Models require substantial disk space; recognition runs locally after caching.
+
+## Record a meeting
+
+1. Select a physical microphone and use **Test audio** to check MIC and SYS. Configure routing below first.
+2. Save your AI agent/model choices. Gain preview and three-second silence calibration work during an audio test.
+3. Click **Start meeting**. Capture must open before a session is created. The main window minimizes and the transcript panel appears at the current monitor's right edge.
+4. Click **Stop**. Capture delivers its final frame, recognition drains, the transcript saves, the full window returns, and AI notes generate. **Expand** restores the full window while recording continues.
+5. Correct text, check actions, research questions, reopen history, or export TXT/Markdown.
+
+WhisperX processes batches. The app feeds chunks of up to six seconds with overlap; live updates appear after recognition finishes. Word alignment supports overlap trimming. The footer reports inference time, queue size, real-time factor, and latency. If the queue grows, choose a smaller model or adjust the CPU thread limit.
+
+Captures all system sound. Teams mute does not mute this app; use **Mute mic** here. **Pause** silences both inputs while retaining elapsed time. Headphones reduce duplicate speaker audio entering the mic. Stop before changing devices. Diarization, live AI summaries, video import, and Teams-only capture are not implemented.
+
+## Audio routing
+
+**Windows:** SoundCard uses WASAPI loopback for the default output plus the selected microphone. Enable microphone access for desktop apps in Windows Privacy settings. A usable output device must be present.
+
+**macOS:** Install [BlackHole 2ch](https://github.com/ExistentialAudio/BlackHole). In Audio MIDI Setup create a Multi-Output Device containing BlackHole and your headphones/speakers. Use the physical output as clock source, enable BlackHole drift correction, and select the Multi-Output Device as system output. Select a physical microphone in this app. The worker reads BlackHole separately. Allow microphone access for the app/Python process in System Settings → Privacy & Security; source launches can attribute access to Terminal. Without BlackHole, capture fails before creating a meeting. Native ScreenCaptureKit capture is not implemented.
+
+**Linux:** Uses the default PulseAudio output monitor and microphone. PipeWire needs its PulseAudio compatibility server; ALSA-only capture is unsupported.
+
+## AI API configuration
+
+Open **Audio, AI API and transcript settings** and choose **Local proxy (OpenAI compatible)** or **Gemini API**. Configure the base URL, API key, summary model, and optional answer model. Use a proxy base such as http://127.0.0.1:4000/v1; the app calls /chat/completions. Gemini uses https://generativelanguage.googleapis.com/v1beta, a Gemini API key, and a supported model such as gemini-2.5-flash. A blank answer model uses the summary model. No AI CLI is called or required.
+
+Saving writes AI_PROVIDER, AI_BASE_URL, AI_API_KEY, AI_SUMMARY_MODEL, and AI_ANSWER_MODEL to .env in the app's local data directory. The file loads on startup for reuse and can be edited directly while the app is closed. See .env.example for the format. The key is stored in that file as requested, with user-only file permissions on Unix, and is omitted from UI state, meeting documents, and error messages. Leave the key input blank to keep the saved key when the provider and URL are unchanged.
+
+Use **Test AI API connection** before generating notes. Summary JSON is validated against the transcript: owners, dates, and evidence must come from cited passages. Gemini question research uses Google Search grounding and accepts only returned grounding URLs. Proxy-generated answers include their text but are marked unverified because generic chat-completion proxies do not provide independently verified search citations. API jobs can be cancelled and have a ten-minute timeout.
+
+## Storage and privacy
+
+Session JSON remains compatible with the previous app. Windows uses `%APPDATA%\Live Meeting Notes`; macOS uses `~/Library/Application Support/Live Meeting Notes`; Linux uses `~/.local/share/Live Meeting Notes`. The default automatic Markdown/TXT folder is `scripts` inside that directory; existing custom folders are retained. Models cache in `whisperx/models`. Old VAD and CPU/CUDA preferences migrate; WhisperX uses CPU/int8 only.
+
+Each meeting automatically writes a complete Markdown file containing the transcript, summary, to-do list, questions, answers, sources, and completion flags. It updates after edits, checked tasks, and researched answers. TXT exports remain available for compatible imports. Unchanged automatic TXT files reopen their saved notes, actions, and answers. External edits import as new sessions; automatic saving preserves changed content in separate edited copies. Transcript corrections invalidate notes/answers. Regeneration asks before replacing reviewed data and publishes replacements only after successful persistence.
+
+Audio is deleted only after successful transcript/session saving. Pending WAV/timing journals survive interruption for recovery. TXT save errors leave session JSON durable, and TXT is rebuilt on startup. Set `MEETING_DATA_DIR` to a temporary directory for isolated checks.
+
+Speech is local. AI summaries send transcript context to the chosen provider; research sends the question and supporting passages to the provider/search service. The backend uses private stdio rather than an HTTP speech server.
+
+## Build and verify
+
+```bash
 npm test
+python3 -m unittest discover -s test -p 'test_*.py'
+npm run build:web
 npm run prepare:resources
-npm run dist:mac
+cargo check --manifest-path src-tauri/Cargo.toml
+npm run build
 ```
 
-Build on the matching architecture; the speech binaries are built for that host. Output is `dist/Live-Meeting-Notes-0.3.0-mac-arm64.dmg` and `.zip` for Apple Silicon, or `mac-x64` for Intel. The app contains the required microphone/system audio usage descriptions and runtime entitlements. Speech executables are signed before their checksums are recorded.
+Build on the matching OS/architecture. Artifacts appear under `src-tauri/target/release/bundle`. `prepare:resources` bundles the host Node runtime, backend, and worker sources. **Python/WhisperX is not bundled:** packaged users must install the environment and select its absolute interpreter path. There is no one-file portable build in this version. Configure platform signing for trusted installer distribution.
 
-Mac builds use ad-hoc signatures and are not notarized. Gatekeeper or managed policy can block them; trusted distribution requires Developer ID signing and notarization.
+The desktop workflow builds Windows/macOS and runs Node/Python checks. Hardware capture and live AI provider behavior needs native verification. Historical Electron benchmarks describe the previous engine only. For real speech checks, supply a short mono 16-kHz English WAV:
 
-The **Build desktop apps** GitHub Actions workflow runs Windows, Apple Silicon and Intel builds. It checks tests, native Mac speech recognition, package contents/checksums, signatures, privacy declarations, and packaged Mac startup. Run it from the repository's Actions page; successful builds provide EXE, DMG and ZIP artifacts.
-
-## Tests and verification
-
-```powershell
-npm test
-node scripts/benchmark.cjs --self-check
+```bash
+node scripts/native-smoke.cjs /absolute/path/short-english.wav
+node scripts/benchmark.cjs --wav /absolute/path/short-english.wav --model base.en --runs 3
 ```
 
-Tests cover audio chunking, Stop draining, recovery, atomic persistence and failures, agent validation, model/effort arguments, citation provenance, action completion, TXT imports and export content.
+See [design](docs/tauri-whisperx.md) and [verification](docs/verification.md).
 
-For isolated native Windows checks with generated audio:
+## macOS releases
 
-```powershell
-$env:MEETING_SMOKE_DATA = "$env:TEMP\live-meeting-notes-smoke"
-$env:MEETING_SMOKE_PORT = '9237'
-# First terminal, after preparing resources:
-npx electron scripts/smoke-main.cjs --remote-debugging-port=9237
-# Second terminal with the same environment variables:
-node scripts/gui-smoke.cjs --synthetic --features --capture --close
-```
+Apple Silicon Macs (M1 or later) with macOS 12 or later are supported. Current WhisperX/PyTorch dependencies do not provide Intel Mac wheels, so Intel releases are not produced.
 
-AI checks use configured services. Debugging is enabled only by the explicit launch argument. See [verification results](docs/verification.md) for tested behavior and remaining hardware checks.
+On an Apple Silicon Mac, run npm run dist:mac and then npm run release:mac. The release script validates the app and Node architectures, signatures, microphone usage declaration, and packaged backend startup, then creates a DMG, ZIP, and SHA256SUMS.txt under dist/releases.
 
-This version supports live English capture and TXT imports. Video-file import, Chinese transcription, speaker identification, Teams-only audio isolation and live summaries are not implemented.
+Pushing a version tag such as v0.4.0 runs the Release macOS workflow. It also checks real CPU speech recognition on the Mac runner before publishing the DMG and ZIP to GitHub Releases. API keys are omitted from public releases; enter your API settings in the app for reuse in its app-data .env file.
+
+The app uses ad-hoc signatures and is not notarized. Python/WhisperX and BlackHole remain separate installation prerequisites. See the Mac release notes for details.
 
 ## License
 
-[MIT](LICENSE). Speech resources have separate notices in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+[MIT](LICENSE). Runtime/model notices: [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).

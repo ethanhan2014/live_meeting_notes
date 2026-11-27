@@ -5,6 +5,15 @@ const {parseTranscript,saveTranscript,listTranscripts,readTranscript}=require('.
 const {saveSession,exportSession}=require('../lib/session.cjs');
 const fixture=require('./fixtures/meeting.json');
 
+test('Markdown saves contain transcript, summary, completed tasks, questions, and answers',async t=>{
+ const folder=await fs.mkdtemp(path.join(os.tmpdir(),'meeting-md-'));t.after(()=>fs.rm(folder,{recursive:true,force:true}));
+ const session=structuredClone(fixture);session.notes.actions[0].done=true;
+ const name=await saveTranscript(folder,session,'md');assert.match(name,/\.md$/);
+ const content=await fs.readFile(path.join(folder,name),'utf8');
+ for(const heading of ['## Transcript','## Summary','## Actions','## Open questions','## Researched answers and sources'])assert.ok(content.includes(heading));
+ assert.match(content,/\[x\] Confirm the release date/);assert.equal(content,exportSession(session,'md'));
+});
+
 test('TXT imports retain timed passages and accept untimed English text without invented timing',()=>{
   const timed=parseTranscript(exportSession(fixture,'txt'));assert.deepEqual(timed.transcript,fixture.transcript);assert.notEqual(timed.id,fixture.id);assert.equal(timed.notes,null);
   const plain=parseTranscript('\uFEFFFirst point.\r\nSecond point.');assert.deepEqual(plain.transcript.map(row=>row.text),['First point.','Second point.']);assert.ok(plain.transcript.every(row=>row.start===0&&row.end===0));

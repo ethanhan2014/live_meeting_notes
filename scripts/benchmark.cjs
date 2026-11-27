@@ -46,29 +46,29 @@ function selfCheck() {
 }
 async function main(args) {
   if(args.length===1 && args[0]==='--self-check'){selfCheck();return;}
-  if(args.includes('--help')){console.log('node scripts/benchmark.cjs --wav short-english-16k.wav [--threads 2,4,6] [--vad on|off|both] [--runs 5] [--logical-seconds 1800] [--json results.json]\nMeasures repeated inference, then simulates arrivals by cycling measured durations. It is not a live meeting soak test.');return;}
-  const options={threads:'6',vad:'both',runs:'5','logical-seconds':'1800'};
+  if(args.includes('--help')){console.log('node scripts/benchmark.cjs --wav short-english-16k.wav [--threads 2,4,6] [--model base.en|small.en|medium.en|large-v3] [--runs 5] [--logical-seconds 1800] [--json results.json]\nMeasures repeated inference, then simulates arrivals by cycling measured durations. It is not a live meeting soak test.');return;}
+  const options={threads:'6',model:'base.en',runs:'5','logical-seconds':'1800'};
   for(let i=0;i<args.length;i+=2){
     const key=args[i]?.slice(2);
-    if(!args[i]?.startsWith('--') || !['wav','threads','vad','runs','logical-seconds','json'].includes(key) || !args[i+1] || args[i+1].startsWith('--'))throw new Error('Invalid benchmark arguments; use --help.');
+    if(!args[i]?.startsWith('--') || !['wav','threads','model','runs','logical-seconds','json'].includes(key) || !args[i+1] || args[i+1].startsWith('--'))throw new Error('Invalid benchmark arguments; use --help.');
     options[key]=args[i+1];
   }
   const threads=options.threads.split(',').map(Number),runs=Number(options.runs),logicalSeconds=Number(options['logical-seconds']);
-  if(!options.wav || !threads.length || threads.some(n=>!Number.isInteger(n)||n<1||n>16) || !Number.isInteger(runs)||runs<1||runs>1000 || !Number.isFinite(logicalSeconds)||logicalSeconds<=0||logicalSeconds>86400 || !['on','off','both'].includes(options.vad))throw new Error('Invalid benchmark options; use --help.');
+  if(!options.wav || !threads.length || threads.some(n=>!Number.isInteger(n)||n<1||n>16) || !Number.isInteger(runs)||runs<1||runs>1000 || !Number.isFinite(logicalSeconds)||logicalSeconds<=0||logicalSeconds>86400 || (!['base.en','small.en','medium.en','large-v3'].includes(options.model)))throw new Error('Invalid benchmark options; use --help.');
   const wavPath=path.resolve(options.wav),durationSeconds=wavSeconds(await fs.readFile(wavPath));
   const results={mode:'repeated short fixture inference plus simulated logical replay',sample:path.basename(wavPath),durationSeconds,
     machine:{platform:process.platform,arch:process.arch,cpu:os.cpus()[0]?.model,logicalCPUs:os.cpus().length,node:process.version},runs:[]};
-  for(const count of threads)for(const vad of options.vad==='both'?[false,true]:[options.vad==='on']){
-    const engine=new SpeechEngine(path.resolve(__dirname,'..','resources'),{threads:count,vad});
+  for(const count of threads){
+    const engine=new SpeechEngine(path.resolve(__dirname,'..','resources'),{threads:count,speechModel:options.model});
     try{
       const startup=performance.now();await engine.start();const startupMs=performance.now()-startup;
       const measurements=[];let segments=[];
       for(let i=0;i<runs;i++){
         const started=performance.now();segments=await engine.transcribe(wavPath);measurements.push(performance.now()-started);
-        process.stderr.write(`threads=${engine.threads} vad=${vad} run=${i+1}/${runs} inferenceMs=${Math.round(measurements.at(-1))}\n`);
+        process.stderr.write(`threads=${engine.options.threads} model=${options.model} run=${i+1}/${runs} inferenceMs=${Math.round(measurements.at(-1))}\n`);
       }
       const total=measurements.reduce((sum,value)=>sum+value,0);
-      results.runs.push({threads:engine.threads,vad,startupMs,inferences:runs,p50InferenceMs:percentile(measurements,.5),p95InferenceMs:percentile(measurements,.95),
+      results.runs.push({threads:engine.options.threads,model:options.model,device:'cpu',startupMs,inferences:runs,p50InferenceMs:percentile(measurements,.5),p95InferenceMs:percentile(measurements,.95),
         rtf:total/(runs*durationSeconds*1000),inferenceMs:measurements,text:segments.map(s=>s.text).join(' ').trim(),segments,
         replay:replay(measurements,durationSeconds===6?5.5:durationSeconds,logicalSeconds)});
     }finally{engine.close();}

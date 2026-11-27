@@ -1,8 +1,9 @@
+import './bridge.js';
 const $=id => document.getElementById(id);
-let current=null,systemStream=null,micStream=null,context=null,worklet=null,capturing=false,stopping=false,starting=false,flushResolve=null;
+let current=null,capturing=false,stopping=false,starting=false;
 let shownSession=null,shownRevision=null,shownSegments=0,shownNotes='',shownHistory='',shownSettings='';
 let testMode=false,muted=false,paused=false,calibration=null,editSave=null;
-let shownAgents='',shownScripts='';
+let shownScripts='';
 function node(tag,text,className='') {const value=document.createElement(tag);value.textContent=text;value.className=className;return value;}
 function time(seconds) {const value=Math.floor(Math.max(0,seconds));return [Math.floor(value/3600),Math.floor(value/60)%60,value%60].map(part=>String(part).padStart(2,'0')).join(':');}
 function showError(message) {$('error').textContent=message;$('error').hidden=!message;}
@@ -10,22 +11,18 @@ function elapsed() {
   const session=current?.session;
   $('elapsed').textContent=session ? time((Date.parse(session.endedAt || new Date().toISOString())-Date.parse(session.startedAt))/1000) : '00:00';
 }
-function settingsValue() {
-  return {micGain:Number($('mic-gain').value),systemGain:Number($('system-gain').value),noiseThreshold:Number($('noise-threshold').value),
-    threads:Number($('threads').value),vad:$('vad').checked,codexExecutable:$('codex-path').value.trim(),transcriptFolder:$('transcript-folder').value.trim(),
-    summaryAgent:$('summary-agent').value,summaryModel:$('summary-model').value.trim(),summaryEffort:$('summary-effort').value,
-    answerAgent:$('answer-agent').value,answerModel:$('answer-model').value.trim(),answerEffort:$('answer-effort').value};
+function settingsValue(){
+ return {micGain:Number($('mic-gain').value),systemGain:Number($('system-gain').value),noiseThreshold:Number($('noise-threshold').value),
+  threads:Number($('threads').value),speechModel:$('speech-model').value,batchSize:Number($('batch-size').value),pythonExecutable:$('python-path').value.trim(),transcriptFolder:$('transcript-folder').value.trim(),
+  apiProvider:$('api-provider').value,apiBaseUrl:$('api-base-url').value.trim(),apiKey:$('api-key').value.trim(),summaryModel:$('summary-model').value.trim(),answerModel:$('answer-model').value.trim()};
 }
-function modelControls(prefix){
-  const agent=$(prefix+'-agent').value,selected=$(prefix+'-effort').value;
-  const efforts={codex:['minimal','low','medium','high','xhigh'],claude:['low','medium','high','xhigh','max'],opencode:['low','medium','high','max'],gemini:['low','medium','high']}[agent]||[];
-  $(prefix+'-effort').replaceChildren(...['',...efforts].map(value=>{const option=node('option',value||'Default');option.value=value;return option;}));$(prefix+'-effort').value=efforts.includes(selected)?selected:'';
-  const models={codex:['gpt-6-luna','gpt-6.1-sol'],claude:['sonnet','opus','haiku'],opencode:[],gemini:['gemini-2.5-flash','gemini-2.5-pro']}[agent]||[];
-  $(prefix+'-models').replaceChildren(...models.map(value=>{const option=node('option',value);option.value=value;return option;}));
+function modelControls(){
+ const models=$('api-provider').value==='gemini'?['gemini-2.5-flash','gemini-2.5-pro']:[];
+ for(const prefix of ['summary','answer'])$(prefix+'-models').replaceChildren(...models.map(value=>{const option=node('option',value);option.value=value;return option;}));
 }
 function gains() {
   for(const name of ['mic','system'])$(name+'-gain-value').textContent=Number($(name+'-gain').value).toFixed(1)+'×';
-  if(testMode)worklet?.port.postMessage({micGain:Number($('mic-gain').value),systemGain:Number($('system-gain').value)});
+  if(testMode)act(()=>window.meeting.captureSettings({micGain:Number($('mic-gain').value),systemGain:Number($('system-gain').value)}));
 }
 function evidence(card,timestamps,session) {
   for(const stamp of timestamps){
@@ -81,7 +78,7 @@ function renderNotes(session,state) {
 function render(state) {
   current=state;const session=state.session,locked=!!state.busy||state.active||state.closing||state.testing||starting||stopping;
   const labels={notes:'AI is generating notes…',research:'AI is researching…',finishing:'Finishing transcription…',recovering:'Recovering saved audio…',diagnostics:'Testing AI connections…',opening:'Opening session…',saving:'Saving changes…',preparing:'Preparing recording…'};
-  $('status').textContent=state.closing?'Finishing before closing…':labels[state.busy]|| (state.active?(state.paused?'Paused':'Recording'):state.testing?'Testing audio':state.ready?'Ready':state.error?'Setup needs attention':'Preparing speech model…');
+  $('status').textContent=state.closing?'Finishing before closing…':labels[state.busy]|| (state.active?(state.paused?'Paused':'Recording'):state.testing?'Testing audio':state.ready?'Ready':state.error?'Setup needs attention':'Ready · WhisperX loads on Start');
   $('status-dot').classList.toggle('recording',state.active&&!state.paused);
   $('start').disabled=locked; $('stop').disabled=!state.active||stopping||starting;
   $('microphone').disabled=locked;
@@ -100,20 +97,18 @@ function render(state) {
   $('open-session').disabled=locked||!$('history').value;$('history').disabled=locked;
   $('recover').hidden=!state.recovery.count;$('recover').disabled=locked;
   $('recovery-info').textContent=state.recovery.legacyCount?`${state.recovery.legacyCount} audio file(s) lack usable timing metadata and are preserved.`:state.recovery.count?`${state.recovery.count} pending audio record(s)` : '';
-  for(const id of ['save-settings','pick-codex','diagnostics','threads','vad','codex-path','noise-threshold'])$(id).disabled=locked;
+  for(const id of ['save-settings','diagnostics','threads','speech-model','batch-size','python-path','noise-threshold'])$(id).disabled=locked;
   for(const id of ['mic-gain','system-gain'])$(id).disabled=state.active||!!state.busy||state.closing||!!calibration;
-  for(const id of ['summary-agent','summary-model','summary-effort','answer-agent','answer-model','answer-effort','transcript-folder','pick-transcript-folder','import-transcript','rescan','transcript-file'])$(id).disabled=locked;
+  for(const id of ['api-provider','api-base-url','api-key','summary-model','answer-model','transcript-folder','pick-transcript-folder','import-transcript','rescan','transcript-file'])$(id).disabled=locked;
   $('load-transcript').disabled=locked||!$('transcript-file').value;
-  if(state.agents){const key=JSON.stringify(state.agents);if(key!==shownAgents){shownAgents=key;for(const prefix of ['summary','answer']){const selected=$(prefix+'-agent').value;$(prefix+'-agent').replaceChildren(...state.agents.map(agent=>{const option=node('option',agent.label+(agent.available?'':' (not found)'));option.value=agent.id;option.disabled=!agent.available;return option;}));$(prefix+'-agent').value=selected;}}}
   const settingsKey=JSON.stringify(state.settings);
   if(settingsKey!==shownSettings){
     const value=state.settings;shownSettings=settingsKey;
     $('mic-gain').value=value.micGain;$('system-gain').value=value.systemGain;$('noise-threshold').value=value.noiseThreshold;
-    $('threads').value=value.threads;$('vad').checked=value.vad;$('codex-path').value=value.codexExecutable;$('transcript-folder').value=value.transcriptFolder||'';
-    for(const prefix of ['summary','answer']){$(prefix+'-agent').value=value[prefix+'Agent'];modelControls(prefix);$(prefix+'-model').value=value[prefix+'Model'];$(prefix+'-effort').value=value[prefix+'Effort'];}gains();
+    $('threads').value=value.threads;$('speech-model').value=value.speechModel;$('batch-size').value=value.batchSize;$('python-path').value=value.pythonExecutable;$('transcript-folder').value=value.transcriptFolder||'';
+    $('api-provider').value=value.apiProvider;$('api-base-url').value=value.apiBaseUrl;$('api-key').value='';modelControls();for(const prefix of ['summary','answer'])$(prefix+'-model').value=value[prefix+'Model'];gains();
   }
-  $('transcript-folder').placeholder=state.scriptsDirectory||'';
-  $('codex-path').placeholder=state.platform==='darwin'?'/opt/homebrew/bin/codex':'C:\\…\\codex.exe';
+  $('transcript-folder').placeholder=state.scriptsDirectory||'';$('api-key').placeholder=state.hasApiKey?'Saved in .env; leave blank to keep':'Optional for proxy; required for Gemini';
   if(state.scriptFiles){const key=JSON.stringify(state.scriptFiles);if(key!==shownScripts){shownScripts=key;const selected=$('transcript-file').value;$('transcript-file').replaceChildren(...state.scriptFiles.map(name=>{const option=node('option',name);option.value=name;return option;}));if(state.scriptFiles.includes(selected))$('transcript-file').value=selected;}}
   $('load-transcript').disabled=locked||!$('transcript-file').value;
   const historyKey=JSON.stringify(state.history);
@@ -123,7 +118,7 @@ function render(state) {
     if(state.history.some(item=>item.id===selected))$('history').value=selected;
   }
   $('open-session').disabled=locked||!$('history').value;
-  if(state.diagnostic)$('diagnostic-result').textContent=`${state.diagnostic.version}\nNotes: ${state.diagnostic.notesOk?'OK':'Failed'} · Search: ${state.diagnostic.searchOk?'OK':'Failed'}\n${state.diagnostic.details}`;
+  if(state.diagnostic)$('diagnostic-result').textContent=`${state.diagnostic.version}\nNotes: ${state.diagnostic.notesOk?'OK':'Failed'}\n${state.diagnostic.details}`;
   showError([state.error,state.scriptSaveError,session?.status==='incomplete'?(session.incompleteReason||session.interruption||'This session is incomplete. Recover pending audio if available.'):''].filter(Boolean).join('\n'));elapsed();
   if(session&&(shownSession!==session.id||shownRevision!==(session.transcriptRevision||0))){$('transcript').replaceChildren();shownSession=session.id;shownRevision=session.transcriptRevision||0;shownSegments=0;$('history').value=session.id;}
   if(session?.transcript.length){
@@ -140,20 +135,16 @@ function render(state) {
   const notesKey=JSON.stringify([session?.id,session?.notes,session?.answers,shownRevision,state.busy==='notes',session?.notesEdited]);
   if(notesKey!==shownNotes){shownNotes=notesKey;renderNotes(session,state);}
   document.querySelectorAll('.research,.edit-segment,.action-check').forEach(button=>{button.disabled=locked;});
-  if(state.captureError&&state.active&&capturing&&!stopping)stop(false);
+  if(state.captureError&&(state.active||state.testing)&&capturing&&!stopping)stop(false);
 }
 async function act(action){try{return await action();}catch(error){showError(error.message);}}
 async function microphones(){
-  const selected=$('microphone').value,devices=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='audioinput'&&device.deviceId!=='default');
-  $('microphone').replaceChildren(new Option('System default microphone',''));devices.forEach((device,index)=>$('microphone').append(new Option(device.label||`Microphone ${index+1}`,device.deviceId)));$('microphone').value=selected;
+  const selected=$('microphone').value,devices=await window.meeting.devices();
+  $('microphone').replaceChildren(new Option('System default microphone',''));
+  for(const device of devices)$('microphone').append(new Option(device.name,device.id));
+  if(devices.some(device=>device.id===selected))$('microphone').value=selected;
 }
-async function release(){
-  capturing=false;calibration=null;
-  for(const stream of [systemStream,micStream])stream?.getTracks().forEach(track=>track.stop());
-  if(context&&context.state!=='closed')await context.close();
-  systemStream=null;micStream=null;context=null;worklet=null;
-  $('mic-level').value=0;$('system-level').value=0;
-}
+async function release(){capturing=false;calibration=null;$('mic-level').value=0;$('system-level').value=0;}
 function meterFrame(frame){
   $('mic-level').value=Math.min(1,frame.mic*5);$('system-level').value=Math.min(1,frame.system*5);
   $('audio-status').textContent=frame.peak>=.98?'Audio is clipping. Lower the gains.':`Raw mic ${(frame.rawMic*100).toFixed(1)}% · system ${(frame.rawSystem*100).toFixed(1)}% · mixed peak ${(Math.min(frame.peak,9)*100).toFixed(0)}%`;
@@ -168,47 +159,23 @@ function meterFrame(frame){
   }
 }
 async function start(test=false){
-  if(starting||capturing)return;let failureMessage='';starting=true;render(current);showError('');
+  if(starting||capturing)return;starting=true;render(current);showError('');
   try{
-    systemStream=await navigator.mediaDevices.getDisplayMedia({audio:true,video:{frameRate:1,width:16,height:16}});
-    if(!systemStream.getAudioTracks().length||systemStream.getAudioTracks().some(track=>track.readyState!=='live'))throw new Error(current.platform==='darwin'?'System audio is unavailable. macOS 14.2 or later is required. Allow screen recording and system audio recording in System Settings → Privacy & Security, then restart the app.':'System audio is unavailable. Check your output device and audio permissions.');
-    for(const track of systemStream.getVideoTracks())track.enabled=false;
-    const device=$('microphone').value;
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{...(device?{deviceId:{exact:device}}:{}),echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:1},video:false});
-    if([...systemStream.getAudioTracks(),...micStream.getAudioTracks()].some(track=>track.readyState!=='live'))throw new Error('An audio device disconnected before recording started.');
-    context=new AudioContext({sampleRate:16000});if(context.sampleRate!==16000)throw new Error('The audio device could not provide a 16-kHz recording context.');
-    await context.audioWorklet.addModule(new URL('./audio-worklet.js',import.meta.url));
-    worklet=new AudioWorkletNode(context,'meeting-audio',{numberOfInputs:2,numberOfOutputs:1,outputChannelCount:[1]});
-    testMode=test;muted=false;paused=false;
-    render(await (test?window.meeting.audioTest(true):window.meeting.start()));
-    if(current.closing)throw new Error('The app is closing.');
-    const values=test?settingsValue():current.settings;worklet.port.postMessage({micGain:values.micGain,systemGain:values.systemGain,muted,paused});
-    worklet.port.onmessage=event=>{
-      if(event.data.flushed){flushResolve?.();flushResolve=null;return;}
-      if(event.data.pcm){if(!testMode)window.meeting.pcm(event.data.pcm);meterFrame(event.data);}
-    };
-    context.createMediaStreamSource(micStream).connect(worklet,0,0);context.createMediaStreamSource(new MediaStream(systemStream.getAudioTracks())).connect(worklet,0,1);
-    worklet.connect(context.destination);await context.resume();capturing=true;
-    for(const track of [...systemStream.getAudioTracks(),...micStream.getAudioTracks()])track.onended=()=>{if(capturing&&!stopping)act(async()=>{if(!testMode)await window.meeting.captureFailed('An audio device disconnected. This transcript may be incomplete.');await stop(false);});};
-    await microphones();if(!test)await window.meeting.compact();
+    testMode=test;muted=false;paused=false;const options={microphone:$('microphone').value};
+    render(await(test?window.meeting.audioTest(true,options):window.meeting.start(options)));capturing=true;
+    if(test)await window.meeting.captureSettings({micGain:Number($('mic-gain').value),systemGain:Number($('system-gain').value)});
+    else await window.meeting.compact();
   }catch(error){
-    const message=current.platform==='darwin'&&['NotAllowedError','SecurityError'].includes(error.name)?'Allow microphone, screen recording and system audio recording in System Settings → Privacy & Security, then restart the app.':error.message||'Audio capture failed. Check microphone and system audio permissions.';failureMessage=message;
     if(testMode)await window.meeting.audioTest(false).catch(()=>{});
-    else if((await window.meeting.state()).active){await window.meeting.captureFailed(message);await window.meeting.stop(false).catch(()=>{});}
-    await release();testMode=false;render(await window.meeting.state());showError(message);
-  }finally{starting=false;render(await window.meeting.state());if(failureMessage)showError(failureMessage);}
+    else if((await window.meeting.state()).active)await window.meeting.stop(false).catch(()=>{});
+    await release();testMode=false;showError(error.message);
+  }finally{starting=false;render(await window.meeting.state());}
 }
 async function stop(generateNotes=true){
   if(stopping)return;stopping=true;render(current);
-  try{
-    if(worklet&&!testMode)await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{flushResolve=null;reject(new Error('The final audio buffer did not finish. The transcript may be incomplete.'));},2000);
-      flushResolve=()=>{clearTimeout(timer);resolve();};worklet.port.postMessage('flush');
-    }).catch(error=>window.meeting.captureFailed(error.message));
-    await release();
-    if(testMode)await window.meeting.audioTest(false);else await window.meeting.stop(generateNotes);
-  }catch(error){showError(error.message);}
-  finally{testMode=false;muted=false;paused=false;stopping=false;$('audio-status').textContent='Audio capture stopped.';try{render(await window.meeting.state());}catch{}}
+  try{render(await(testMode?window.meeting.audioTest(false):window.meeting.stop(generateNotes)));}
+  catch(error){showError(error.message);}
+  finally{await release();testMode=false;muted=false;paused=false;stopping=false;$('audio-status').textContent='Audio capture stopped.';try{render(await window.meeting.state());}catch{}}
 }
 function field(parent,label,value,{multiline=false,max=8000}={}){
   const wrapper=node('label',label),input=document.createElement(multiline?'textarea':'input');input.value=value||'';input.maxLength=max;wrapper.append(input);parent.append(wrapper);return input;
@@ -235,17 +202,16 @@ $('start').addEventListener('click',()=>start(false));$('stop').addEventListener
 $('audio-test').addEventListener('click',()=>testMode?stop(false):start(true));
 $('calibrate').addEventListener('click',()=>{calibration=[];$('settings-status').textContent='Measuring 3 seconds of quiet audio. Keep silent and pause PC playback.';render(current);});
 for(const name of ['mic','system'])$(name+'-gain').addEventListener('input',gains);
-$('mute').addEventListener('click',()=>{muted=!muted;worklet?.port.postMessage({muted});render(current);});
-$('pause').addEventListener('click',()=>act(async()=>{const value=!paused;await window.meeting.paused(value);paused=value;worklet?.port.postMessage({paused});}));
+$('mute').addEventListener('click',()=>act(async()=>{await window.meeting.captureSettings({muted:!muted});muted=!muted;render(current);}));
+$('pause').addEventListener('click',()=>act(async()=>{const value=!paused;await window.meeting.paused(value);paused=value;}));
 $('cancel').addEventListener('click',()=>act(()=>window.meeting.cancel()));$('notes-retry').addEventListener('click',()=>act(()=>{const regenerate=!!current.session?.notes;if(regenerate&&(current.session.notesEdited||current.session.answers.length||current.session.notes.actions.some(action=>action.done))&&!window.confirm('Regenerating replaces saved notes, resets checked actions and clears researched answers. Continue?'))return;return window.meeting.notes(regenerate);}));
 $('history').addEventListener('change',()=>render(current));$('open-session').addEventListener('click',()=>act(()=>window.meeting.open($('history').value)));
 $('recover').addEventListener('click',()=>act(()=>window.meeting.recover()));
-$('settings-form').addEventListener('submit',event=>{event.preventDefault();act(async()=>{await window.meeting.settings(settingsValue());$('settings-status').textContent='Settings saved.';$('diagnostic-result').textContent='';});});
-$('pick-codex').addEventListener('click',()=>act(async()=>{const path=await window.meeting.pickCodex();if(path)$('codex-path').value=path;}));
-for(const prefix of ['summary','answer'])$(prefix+'-agent').addEventListener('change',()=>{$(prefix+'-model').value='';$(prefix+'-effort').value='';modelControls(prefix);});
+$('settings-form').addEventListener('submit',event=>{event.preventDefault();act(async()=>{await window.meeting.settings(settingsValue());$('api-key').value='';$('settings-status').textContent='Settings saved. AI API configuration is stored in '+current.apiEnvPath;$('diagnostic-result').textContent='';});});
+$('api-provider').addEventListener('change',()=>{$('api-base-url').value=$('api-provider').value==='gemini'?'https://generativelanguage.googleapis.com/v1beta':'http://127.0.0.1:4000/v1';$('summary-model').value=$('api-provider').value==='gemini'?'gemini-2.5-flash':'';$('answer-model').value='';$('api-key').value='';modelControls();});
 $('pick-transcript-folder').addEventListener('click',()=>act(async()=>{const folder=await window.meeting.pickTranscriptFolder();if(folder)$('transcript-folder').value=folder;}));
 $('transcript-file').addEventListener('change',()=>render(current));$('load-transcript').addEventListener('click',()=>act(()=>window.meeting.loadTranscript($('transcript-file').value)));
-$('import-transcript').addEventListener('click',()=>act(()=>window.meeting.importTranscript()));$('rescan').addEventListener('click',()=>act(()=>window.meeting.rescan()));
+$('import-transcript').addEventListener('click',()=>act(()=>window.meeting.importTranscript()));$('rescan').addEventListener('click',()=>act(async()=>{await window.meeting.rescan();await microphones();}));
 $('diagnostics').addEventListener('click',()=>act(async()=>{$('diagnostic-result').textContent='Testing saved configuration…';await window.meeting.diagnostics();}));
 for(const format of ['txt','md'])$('export-'+format).addEventListener('click',()=>act(async()=>{if(await window.meeting.export(format))$('saved-status').textContent=`Saved ${format==='txt'?'TXT':'Markdown'} export.`;}));
 for(const tab of noteTabs){
@@ -257,7 +223,7 @@ for(const tab of noteTabs){
     selectNotesTab(noteTabs[next]);$('tab-'+noteTabs[next]).focus();
   });
 }
-window.meeting.onState(render);window.meeting.onClose(()=>stop(false));
+window.meeting.onState(render);window.meeting.onAudio(meterFrame);window.meeting.onClose(()=>stop(false));
 window.meeting.onStop(()=>stop(true));
-navigator.mediaDevices.addEventListener('devicechange',()=>microphones().catch(()=>{}));setInterval(elapsed,1000);
+setInterval(elapsed,1000);
 try{render(await window.meeting.state());await microphones();}catch(error){showError(error.message);}

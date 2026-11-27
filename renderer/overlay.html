@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ipc: http://ipc.localhost">
 <title>Live transcript</title><link rel="stylesheet" href="overlay.css"></head>
 <body><header><span>Live transcript</span><div><button id="restore" aria-label="Open full app">Expand</button><button id="stop">■ Stop</button></div><p id="status" role="status">Listening…</p></header>
-<main id="transcript" aria-live="polite" aria-relevant="additions"></main><p id="error" role="alert" hidden></p><script src="overlay.js"></script></body></html>
+<main id="transcript" aria-live="polite" aria-relevant="additions"></main><p id="error" role="alert" hidden></p><script type="module" src="overlay.js"></script></body></html>
