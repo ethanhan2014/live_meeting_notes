@@ -12,7 +12,7 @@ while ((Get-Date) -lt $deadline) {
             $root = [System.Windows.Automation.AutomationElement]::FromHandle($app.MainWindowHandle)
             $elements = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
             $names = @($elements | ForEach-Object { $_.Current.Name } | Where-Object { $_ })
-            if (($names -contains 'Saved locally') -and ($names -contains 'Ready · WhisperX loads on Start')) {
+            if (($names -contains 'Saved locally') -and ($names -like 'Ready *WhisperX loads on Start')) {
                 Write-Output 'Portable GUI rendered live backend state through the Tauri bridge.'
                 exit 0
             }
