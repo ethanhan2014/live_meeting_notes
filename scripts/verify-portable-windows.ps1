@@ -33,19 +33,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Packaged Python runtime failed.' }
     & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'native-smoke.cjs') $sample
     if ($LASTEXITCODE -ne 0) { throw 'Packaged offline CPU speech failed.' }
-    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9238'
     $guiStart = New-Object Diagnostics.ProcessStartInfo
     $guiStart.FileName = $executablePath
     $guiStart.UseShellExecute = $false
     $guiStart.RedirectStandardOutput = $true
     $guiStart.RedirectStandardError = $true
-    $guiStart.EnvironmentVariables['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
     $guiStart.EnvironmentVariables['MEETING_DATA_DIR'] = $env:MEETING_DATA_DIR
     $launcher = [Diagnostics.Process]::Start($guiStart)
     $guiErrors = $launcher.StandardError.ReadToEndAsync()
     try {
-        $kind = if ($AllowPrivateDefaults) { 'private' } else { 'public' }
-        & (Join-Path $directory 'runtime/node.exe') (Join-Path $PSScriptRoot 'verify-portable-ui.cjs') $kind
+        & (Join-Path $env:WINDIR 'System32/WindowsPowerShell/v1.0/powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'verify-portable-ui.ps1') -LauncherProcessId $launcher.Id
         if ($LASTEXITCODE -ne 0) { throw 'Packaged GUI startup failed.' }
     } catch {
         Write-Output ('[portable-check] Launcher: ' + (@{exited=$launcher.HasExited;title=$launcher.MainWindowTitle;handle=$launcher.MainWindowHandle.ToInt64()} | ConvertTo-Json -Compress))
@@ -60,7 +57,6 @@ try {
         }
         if (!$launcher.WaitForExit(15000)) { $launcher.Kill(); $launcher.WaitForExit() }
         if ($guiErrors.Result) { Write-Output ('[portable-check] ' + $guiErrors.Result) }
-        Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
     }
     Write-Output ('Portable extraction and offline speech passed: ' + $directory)
 } finally { Remove-Item $temporary -Recurse -Force }
