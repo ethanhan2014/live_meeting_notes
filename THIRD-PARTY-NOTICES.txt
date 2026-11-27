@@ -3,17 +3,24 @@ Live Meeting Notes uses these third-party components:
 Tauri (MIT / Apache-2.0): https://github.com/tauri-apps/tauri
 Node.js (MIT and bundled third-party licenses): https://github.com/nodejs/node/blob/main/LICENSE
 
-The separately installed speech environment uses:
+The speech environment, bundled in the Windows portable executable and installed separately for installers/Mac apps, uses:
+Python (PSF License): https://docs.python.org/3/license.html
 WhisperX (BSD-2-Clause): https://github.com/m-bain/whisperX/blob/v3.8.6/LICENSE
 SoundCard (BSD-3-Clause): https://github.com/bastibe/SoundCard/blob/master/LICENSE
 faster-whisper (MIT): https://github.com/SYSTRAN/faster-whisper
 CTranslate2 (MIT): https://github.com/OpenNMT/CTranslate2
 PyTorch (BSD-3-Clause): https://github.com/pytorch/pytorch
+FFmpeg 7.1 LGPL shared build: https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/tag/autobuild-2026-07-31-14-10
+FFmpeg source for the bundled build: https://github.com/FFmpeg/FFmpeg/tree/1fdbca85aa
+Microsoft WebView2 fixed runtime (Microsoft license): https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 
 Downloaded speech weights retain their upstream licenses, including OpenAI
 Whisper (MIT), Silero VAD (MIT), and the English wav2vec2 alignment model.
-Check each model's distribution terms before redistributing weights. Models
-and the Python environment are not included in this app's installer.
+The Windows portable executable includes base.en, English alignment, and Silero VAD weights.
+These remain separate downloads for installers and Mac apps.
+Whisper weights/model conversion (MIT): https://huggingface.co/Systran/faster-whisper-base.en
+Silero VAD (MIT): https://github.com/snakers4/silero-vad/blob/master/LICENSE
+Fairseq English alignment checkpoint (MIT): https://github.com/facebookresearch/fairseq/blob/main/LICENSE
 
 Packaging includes the Node.js LICENSE for the exact bundled runtime,  Rust dependency licenses can be inspected
 from Cargo.lock and the corresponding upstream crates.

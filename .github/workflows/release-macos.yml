@@ -60,4 +60,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$RELEASE_TAG" release/* --verify-tag --title "Live Meeting Notes $RELEASE_TAG — macOS Apple Silicon" --notes-file docs/release-notes-macos.md
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --verify-tag --title "Live Meeting Notes $RELEASE_TAG" --notes-file docs/release-notes.md || gh release view "$RELEASE_TAG"
+          gh release upload "$RELEASE_TAG" release/* --clobber

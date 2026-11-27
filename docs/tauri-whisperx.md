@@ -6,7 +6,7 @@ Tauri 2 hosts the existing plain JavaScript interface. Rust owns windows, native
 
 Windows capture uses SoundCard WASAPI loopback plus a microphone. Linux uses PulseAudio/PipeWire's PulseAudio compatibility server. macOS requires BlackHole and a Multi-Output Device; SoundCard does not provide native macOS system loopback. Capture checks devices before creating a session. Muting and pausing apply before PCM leaves the worker.
 
-Keep the existing session schema and Windows/macOS data directories. Add Python interpreter, model, and batch size settings; migrate the old optional VAD flag because WhisperX always uses VAD. WhisperX uses CPU/int8 exclusively. Python and its ML environment remain prerequisites for packaged builds; Node is bundled. First model use downloads weights. No diarization or live AI summaries are added.
+Keep the existing session schema and Windows/macOS data directories. Add Python interpreter, model, and batch size settings; migrate the old optional VAD flag because WhisperX always uses VAD. WhisperX uses CPU/int8 exclusively. Python and its ML environment remain prerequisites for installers and Mac apps; the Windows portable executable bundles Python, CPU dependencies, FFmpeg, WebView2, and default English models. Node is bundled in all packages. Other models download on first use. No diarization or live AI summaries are added.
 
 Validation: existing Node suite, stdio subprocess integration, Python worker tests, renderer lifecycle tests, frontend build, Rust checks, and native speech smoke. Hardware capture, macOS routing, authenticated live AI API calls, and signed installers need native verification.
 

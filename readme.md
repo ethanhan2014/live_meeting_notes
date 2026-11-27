@@ -79,7 +79,7 @@ cargo check --manifest-path src-tauri/Cargo.toml
 npm run build
 ```
 
-Build on the matching OS/architecture. Artifacts appear under `src-tauri/target/release/bundle`. `prepare:resources` bundles the host Node runtime, backend, and worker sources. **Python/WhisperX is not bundled:** packaged users must install the environment and select its absolute interpreter path. There is no one-file portable build in this version. Configure platform signing for trusted installer distribution.
+Build on the matching OS/architecture. Installer artifacts appear under `src-tauri/target/release/bundle`. `prepare:resources` bundles the host Node runtime, backend, and worker sources. Installers and Mac apps require a separate Python/WhisperX environment. The Windows portable executable includes the full CPU environment and default English models. Configure platform signing for trusted distribution.
 
 The desktop workflow builds Windows/macOS and runs Node/Python checks. Hardware capture and live AI provider behavior needs native verification. Historical Electron benchmarks describe the previous engine only. For real speech checks, supply a short mono 16-kHz English WAV:
 
@@ -89,6 +89,19 @@ node scripts/benchmark.cjs --wav /absolute/path/short-english.wav --model base.e
 ```
 
 See [design](docs/tauri-whisperx.md) and [verification](docs/verification.md).
+
+## Windows portable releases
+
+Download the Windows x64 **portable.exe** from GitHub Releases and double-click it. There is no installer, administrator requirement, or separate Python/Node/WebView2 setup. The executable bundles CPU WhisperX, FFmpeg, WebView2, base.en, English alignment, and Silero VAD. First launch extracts approximately 5 GB of runtime files to %LOCALAPPDATA%\Live Meeting Notes\portable; subsequent launches reuse that cache. Settings and meeting files retain their existing app-data paths. Additional speech models download when selected.
+
+To build on Windows after npm run build:
+
+    ./scripts/test-portable-windows.ps1
+    ./scripts/prepare-portable-windows.ps1 -AppDirectory src-tauri/target/release -OutputDirectory resources/portable
+    ./scripts/build-portable-windows.ps1 -PayloadDirectory resources/portable -Output dist/releases/Live-Meeting-Notes-0.4.0-windows-x64-portable.exe
+    ./scripts/verify-portable-windows.ps1 -Executable dist/releases/Live-Meeting-Notes-0.4.0-windows-x64-portable.exe
+
+The builder omits .env and credential files from public executables. -IncludePrivateDefaults retains only the runtime .env for a private configured copy; never upload that copy. Version tags run the Windows workflow, verify offline CPU recognition, and publish the portable executable and checksum alongside Mac assets. Windows binaries remain unsigned. Bundled WebView2 is fixed at build time; updating it requires rebuilding the portable executable.
 
 ## macOS releases
 

@@ -23,3 +23,10 @@ test('closing the worker rejects pending requests',async t=>{
 test('speech validates inference configuration',()=>{
  for(const options of [{threads:0},{threads:17},{batchSize:0},{speechModel:'../../model'}])assert.throws(()=>new SpeechEngine('unused',options),/settings/);
 });
+test('portable speech uses its bundled model cache',async t=>{
+ const previous=process.env.MEETING_MODEL_CACHE;process.env.MEETING_MODEL_CACHE=path.join(__dirname,'portable-models');
+ t.after(()=>{if(previous===undefined)delete process.env.MEETING_MODEL_CACHE;else process.env.MEETING_MODEL_CACHE=previous;});
+ const value=new SpeechEngine('unused');let options;
+ value.request=(method,input)=>{options=input;return Promise.resolve();};
+ await value.start();assert.equal(options.cache,process.env.MEETING_MODEL_CACHE);
+});
