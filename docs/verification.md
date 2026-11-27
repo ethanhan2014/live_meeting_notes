@@ -4,6 +4,8 @@
 
 Checked on 2026-11-27 in Linux/WSL. This section supersedes the Electron runtime/engine checks below for the current source.
 
+Apple Silicon release verified in GitHub Actions run 46035218197: 91 Node tests and five Python tests passed; real CPU WhisperX recognition returned word timing in 2,669 ms for the 5.5-second public sample. The app and bundled Node were verified as ARM64, ad-hoc signatures and microphone declarations passed, and the packaged backend returned state with an isolated profile. DMG and ZIP hashes were verified after download. The companion Windows job exposed a CRLF test-import issue; that test fix passed separately on Windows.
+
 - 90 Node tests passed, including meeting persistence, HTTP API adapters, dotenv reuse/default seeding, Markdown saving, startup capture failures, and quiet-period worker death.
 - Five Python worker tests passed, including CPU/int8 loading, alignment, and capture-thread COM cleanup.
 - Vite production builds produced both windows. Runtime preparation copied Windows Node, the backend, worker sources, schemas, and the Node runtime license.
